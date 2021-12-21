@@ -1,0 +1,12 @@
+Le but est d'écrire le bazar en rust sans chercher à obtenir quelque chose de propre mais de fonctionnelle
+
+
+# Partie 1 : Détection de collision
+
+Inspiré de bullet : 
+un objet *monde* qui contient tout les *objets collision* 
+et avoir un méthode dans *monde* qui permette de détecter les collisions entre tout les objets.
+A l'issue de cette méthode, on obtient les points d'intersection et la normale de collision.
+
+
+un tableau qui me dit quelle méthode utilisé pour l'intersection entre ce type et ce type (type de primitive ou bien mesh par exemple).
