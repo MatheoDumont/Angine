@@ -1,4 +1,4 @@
-use crate::math::{vector::Vector, Real};
+use super::{vector::Vector, Real};
 use std::{convert::From, ops::Add, ops::AddAssign, ops::Sub};
 
 pub struct Point {
@@ -17,6 +17,14 @@ impl Point {
             x: 0 as Real,
             y: 0 as Real,
             z: 0 as Real,
+        }
+    }
+
+    pub fn value(same: Real) -> Point {
+        Point {
+            x: same,
+            y: same,
+            z: same,
         }
     }
 }

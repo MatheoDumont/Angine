@@ -1,6 +1,11 @@
 use crate::math::{point::Point, vector::Vector, Real};
 use super::shapes::Shape;
 
+pub struct CollisionData {
+    pub point: Point,
+    pub normal_a_to_b: Vector,
+}
+
 pub struct CollisionObject {
     pub enabled: bool,
     pub id: u32,

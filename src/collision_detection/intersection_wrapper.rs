@@ -3,10 +3,7 @@ use crate::collision_detection::intersection_algorithm;
 use crate::collision_detection::shapes::{Shape, ShapeType, Sphere};
 use crate::math::{point::Point, vector::Vector};
 
-pub struct Collision {
-    pub point: Point,
-    pub normal_a_to_b: Vector,
-}
+
 
 pub trait IntersectionAlgoHandler {
     fn compute(
@@ -35,7 +32,7 @@ impl IntersectionAlgoHandler for SphereToSphere {
             .downcast_ref::<Sphere>()
             .expect("Tried to downcast to Sphere");
 
-        intersection_algorithm::sphere_sphere(p1, sphere1.radius, p2, sphere2.radius)
+        intersection_algorithm::sphere_sphere(p1, sphere1, p2, sphere2)
     }
 }
 
@@ -43,7 +40,7 @@ pub fn get_intersection_fn_by_collisiontypes(
     c1: &'static CollisionObject,
     c2: &'static CollisionObject,
 ) -> Option<impl IntersectionAlgoHandler> {
-    match (c1.shape.collision_type(), c2.shape.collision_type()) {
+    match (c1.shape.shape_type(), c2.shape.shape_type()) {
         (ShapeType::Sphere, ShapeType::Sphere) => Some(SphereToSphere),
         (_, _) => None,
     }

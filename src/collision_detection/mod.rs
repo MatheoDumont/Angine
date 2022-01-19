@@ -1,7 +1,7 @@
 use self::{
-    collisions::CollisionObject,
+    collision::{CollisionObject, CollisionData},
     intersection_wrapper::{
-        get_intersection_fn_by_collisiontypes, Intersection, IntersectionAlgoHandler,
+        get_intersection_fn_by_collisiontypes, IntersectionAlgoHandler,
     },
 };
 
@@ -14,7 +14,7 @@ pub mod intersection_wrapper;
 
 pub struct CollisionWorld {
     collision_objects: Vec<CollisionObject>,
-    detected_intersections: Vec<Intersection>,
+    detected_intersections: Vec<CollisionData>,
     id_counter: u32, // used to give a number to CollisionObject
 }
 
