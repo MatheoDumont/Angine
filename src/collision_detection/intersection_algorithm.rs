@@ -1,22 +1,10 @@
 use crate::collision_detection::intersection_wrapper::Intersection;
 use crate::math::{point::Point, Real};
 
-pub fn sphere_sphere<'a>(p1: &'a Point, r1: Real, p2: &'a Point, r2: Real) -> Option<Intersection> {
-    // on considère que l'intersection se fait en un seul point plutot que deux
-    // pour plus de simplicité, meilleure efficience, stabilité (à vérifier)
-    let d = p1 - p2;
-    let l = d.norm();
-    if r1 + r2 >= l && (r1 - r2).abs() < l {
-        let normal_a_to_b = d / l;
-        let p = p1 + &normal_a_to_b * r1;
-
-        Some(Intersection {
-            point: p,
-            normal_a_to_b: normal_a_to_b,
-        })
-    } else {
-        None
-    }
+pub fn sphere_sphere<'a>(a: &'a Point, radiusA: Real, b: &'a Point, radiusB: Real) -> bool {
+    let distance_a2b = (a - b).norm();
+    let r = radiusA + radiusB >= distance_a2b && (radiusA - radiusB).abs() < distance_a2b;
+    r
 }
 
 #[cfg(test)]
@@ -32,7 +20,7 @@ mod tests {
 
         let x = sphere_sphere(&p1, r1, &p2, r2);
 
-        assert!(x.is_some());
+        assert!(x);
     }
 
     #[test]
@@ -45,7 +33,7 @@ mod tests {
 
         let x = sphere_sphere(&p1, r1, &p2, r2);
 
-        assert!(x.is_none());
+        assert!(x);
     }
 
     #[test]
@@ -58,7 +46,7 @@ mod tests {
 
         let x = sphere_sphere(&p1, r1, &p2, r2);
 
-        assert!(x.is_some());
+        assert!(x);
     }
 
     #[test]
@@ -71,6 +59,6 @@ mod tests {
 
         let x = sphere_sphere(&p1, r1, &p2, r2);
 
-        assert!(x.is_none());
+        assert!(x);
     }
 }

@@ -7,7 +7,8 @@ use self::{
 
 use std::vec::Vec;
 
-pub mod collisions;
+pub mod shapes;
+pub mod collision;
 pub mod intersection_algorithm;
 pub mod intersection_wrapper;
 
