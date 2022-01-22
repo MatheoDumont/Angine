@@ -153,4 +153,12 @@ mod tests {
         assert_eq!(vv.y, 4f32 / r);
         assert_eq!(vv.z, 6f32 / r);
     }
+
+    #[test]
+    fn vector_dot_product() {
+        let v = Vec3::new(1 as Real, 2 as Real, 3 as Real);
+        let vv = Vec3::new(0.5, 0.4, 0.6);
+
+        assert_eq!(&v * &vv, 0.5 + 0.8 + 1.8);
+    }
 }

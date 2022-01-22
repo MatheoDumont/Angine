@@ -45,7 +45,7 @@ impl Sub for &P3 {
     fn sub(self, sub: Self) -> Self::Output {
         Vec3::new(self.x - sub.x, self.y - sub.y, self.z - sub.z)
     }
-}
+}   
 
 impl Add<&Vec3> for &P3 {
     type Output = P3;
