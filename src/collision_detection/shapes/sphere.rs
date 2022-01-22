@@ -1,5 +1,5 @@
 use super::{Shape, ShapeType};
-use crate::math::{Real, Vector};
+use crate::math::{Real, Vec3};
 
 pub struct Sphere {
     pub radius: Real, // radius in ]0, +inf[ but no check
@@ -14,9 +14,9 @@ impl Sphere {
 }
 
 impl Shape for Sphere {
-    fn inertia_matrix(&self) -> Vector {
+    fn inertia_matrix(&self) -> Vec3 {
         // pour l'instant
-        Vector::zeros()
+        Vec3::zeros()
     }
 
     fn shape_type(&self) -> ShapeType {

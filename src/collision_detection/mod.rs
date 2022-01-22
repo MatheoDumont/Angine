@@ -43,11 +43,11 @@ impl CollisionWorld {
                 let obj_j = &self.collision_objects[j];
 
                 if let Some(algo) = get_intersection_fn_by_collisiontypes(&obj_i, &obj_j) {
-                    if let Some(intersection) =
-                        algo.compute(pos_i, shape_i, &obj_j.position, &obj_j.shape)
-                    {
-                        self.detected_intersections.push(intersection);
-                    }
+                    // if let Some(intersection) =
+                    //     algo.compute(pos_i, shape_i, &obj_j.position, &obj_j.shape)
+                    // {
+                    //     self.detected_intersections.push(intersection);
+                    // }
                 }
             }
         }

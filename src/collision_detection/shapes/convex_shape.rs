@@ -1,5 +1,5 @@
 use super::{Shape, ShapeType};
-use crate::math::{Point, Real, Vector};
+use crate::math::{P3, Real, Vec3};
 
 pub trait ConvexShape: Shape {}
 
@@ -15,27 +15,27 @@ impl Cube {
         }
     }
     // returns the vertices of the cube centered at the origin (0,0,0)
-    fn relative_vertex(&self) -> Vec<Point> {
+    fn relative_vertex(&self) -> Vec<P3> {
         let r = self.radius;
 
         vec![
             // Nearest face along z
-            Point::new(r, r, r),
-            Point::new(-r, r, r),
-            Point::new(-r, -r, r),
-            Point::new(r, -r, r),
+            P3::new(r, r, r),
+            P3::new(-r, r, r),
+            P3::new(-r, -r, r),
+            P3::new(r, -r, r),
             // Farest face along z
-            Point::new(r, r, -r),
-            Point::new(-r, r, -r),
-            Point::new(-r, -r, -r),
-            Point::new(r, -r, -r),
+            P3::new(r, r, -r),
+            P3::new(-r, r, -r),
+            P3::new(-r, -r, -r),
+            P3::new(r, -r, -r),
         ]
     }
 }
 
 impl Shape for Cube {
-    fn inertia_matrix(&self) -> Vector {
-        Vector::zeros()
+    fn inertia_matrix(&self) -> Vec3 {
+        Vec3::zeros()
     }
     fn shape_type(&self) -> ShapeType {
         ShapeType::Cube
@@ -52,8 +52,8 @@ pub struct Rectangle {
 }
 
 impl Shape for Rectangle {
-    fn inertia_matrix(&self) -> Vector {
-        Vector::zeros()
+    fn inertia_matrix(&self) -> Vec3 {
+        Vec3::zeros()
     }
     fn shape_type(&self) -> ShapeType {
         ShapeType::Rectangle
@@ -66,8 +66,8 @@ impl ConvexShape for Rectangle {}
 pub struct ConvexMesh {}
 
 impl Shape for ConvexMesh {
-    fn inertia_matrix(&self) -> Vector {
-        Vector::zeros()
+    fn inertia_matrix(&self) -> Vec3 {
+        Vec3::zeros()
     }
     fn shape_type(&self) -> ShapeType {
         ShapeType::ConvexMesh

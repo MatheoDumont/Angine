@@ -6,7 +6,7 @@ pub use convex_shape::Cube;
 pub use convex_shape::Rectangle;
 pub use sphere::Sphere;
 
-use crate::math::{point::Point, vector::Vector, Real};
+use crate::math::{Real, Vec3, P3};
 use downcast_rs::DowncastSync;
 
 #[derive(Copy, Clone)]
@@ -18,7 +18,7 @@ pub enum ShapeType {
 }
 
 pub trait Shape: DowncastSync {
-    fn inertia_matrix(&self) -> Vector;
+    fn inertia_matrix(&self) -> Vec3;
     fn shape_type(&self) -> ShapeType;
 }
 

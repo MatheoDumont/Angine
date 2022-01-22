@@ -1,16 +1,16 @@
 use crate::collision_detection::collision::CollisionObject;
 use crate::collision_detection::intersection_algorithm;
 use crate::collision_detection::shapes::{Shape, ShapeType, Sphere};
-use crate::math::{point::Point, vector::Vector};
+use crate::math::{P3, Vec3};
 
 
 
 pub trait IntersectionAlgoHandler {
     fn compute(
         &self,
-        p1: &'static Point,
+        p1: &'static P3,
         s1: &Box<dyn Shape>,
-        p2: &'static Point,
+        p2: &'static P3,
         s2: &Box<dyn Shape>,
     ) -> bool;
 }
@@ -20,9 +20,9 @@ struct SphereToSphere;
 impl IntersectionAlgoHandler for SphereToSphere {
     fn compute(
         &self,
-        p1: &'static Point,
+        p1: &'static P3,
         shape1: &Box<dyn Shape>,
-        p2: &'static Point,
+        p2: &'static P3,
         shape2: &Box<dyn Shape>,
     ) -> bool {
         let sphere1 = shape1
