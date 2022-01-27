@@ -1,9 +1,10 @@
 use super::{Real, P3};
 use std::{
     convert::From,
-    ops::{Div, DivAssign, Mul, MulAssign},
+    ops::{Add, Div, DivAssign, Mul, MulAssign, Sub},
 };
 
+#[derive(Copy, Clone)]
 pub struct Vec3 {
     pub x: Real,
     pub y: Real,
@@ -13,6 +14,22 @@ pub struct Vec3 {
 impl From<&P3> for Vec3 {
     fn from(p: &P3) -> Self {
         Vec3::new(p.x, p.y, p.z)
+    }
+}
+
+impl Add for &Vec3 {
+    type Output = Vec3;
+
+    fn add(self, v: Self) -> Self::Output {
+        Vec3::new(self.x + v.x, self.y + v.y, self.z + v.z)
+    }
+}
+
+impl Sub for &Vec3 {
+    type Output = Vec3;
+
+    fn sub(self, v: Self) -> Self::Output {
+        Vec3::new(self.x - v.x, self.y - v.y, self.z - v.z)
     }
 }
 
@@ -84,12 +101,16 @@ impl Vec3 {
     pub fn new(x: Real, y: Real, z: Real) -> Vec3 {
         Vec3 { x: x, y: y, z: z }
     }
-    pub fn zeros() -> Vec3 {
+    pub fn zero() -> Vec3 {
         Vec3::new(0 as Real, 0 as Real, 0 as Real)
     }
 
+    pub fn norm_squared(&self) -> Real {
+        self.x.powi(2) + self.y.powi(2) + self.z.powi(2)
+    }
+
     pub fn norm(&self) -> Real {
-        (self.x.powi(2) + self.y.powi(2) + self.z.powi(2)).sqrt()
+        self.norm_squared().sqrt()
     }
 
     pub fn normalize(&mut self) {
@@ -104,6 +125,54 @@ impl Vec3 {
 
     pub fn dot(&self, o: &Vec3) -> Real {
         self.x * o.x + self.y * o.y + self.z * o.z
+    }
+
+    pub fn cross(&self, o: &Vec3) -> Vec3 {
+        Vec3::new(
+            self.y * o.z - self.z * o.y,
+            self.z * o.x - self.x * o.z,
+            self.x * o.y - self.y * o.x,
+        )
+    }
+
+    /**
+     * This fn return the projection of projected onto self,
+     * this is equivalent to :
+     *      self * self.dot(projected)
+     * if self is normalized i.e self.norm() == 1
+     *
+     * for better efficiency, use project_normalized
+     */
+    pub fn project(&self, projected: &Vec3) -> Vec3 {
+        self * (self.dot(projected) / self.norm_squared())
+    }
+
+    pub fn project_normalized(&self, projected: &Vec3) -> Vec3 {
+        self * self.dot(projected)
+    }
+
+    /**
+     * returns the perpendicular part of v to self
+     */
+    pub fn perpendicular(&self, v: &Vec3) -> Vec3 {
+        v - &self.project(v)
+    }
+
+    pub fn perpendicular_normalized(&self, v: &Vec3) -> Vec3 {
+        v - &self.project_normalized(v)
+    }
+
+    /**
+     * Self is the axis of symmetry where the reflection occur
+     */
+    pub fn reflection(&self, d: &Vec3) -> Vec3 {
+        let perp2 = &self.perpendicular(d) * (2 as Real);
+        d - &perp2
+    }
+
+    pub fn reflection_normalized(&self, d: &Vec3) -> Vec3 {
+        let perp2 = &self.perpendicular_normalized(d) * (2 as Real);
+        d - &perp2
     }
 }
 

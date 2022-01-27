@@ -35,7 +35,7 @@ impl Cube {
 
 impl Shape for Cube {
     fn inertia_matrix(&self) -> Vec3 {
-        Vec3::zeros()
+        Vec3::zero()
     }
     fn shape_type(&self) -> ShapeType {
         ShapeType::Cube
@@ -53,7 +53,7 @@ pub struct Rectangle {
 
 impl Shape for Rectangle {
     fn inertia_matrix(&self) -> Vec3 {
-        Vec3::zeros()
+        Vec3::zero()
     }
     fn shape_type(&self) -> ShapeType {
         ShapeType::Rectangle
@@ -67,7 +67,7 @@ pub struct ConvexMesh {}
 
 impl Shape for ConvexMesh {
     fn inertia_matrix(&self) -> Vec3 {
-        Vec3::zeros()
+        Vec3::zero()
     }
     fn shape_type(&self) -> ShapeType {
         ShapeType::ConvexMesh

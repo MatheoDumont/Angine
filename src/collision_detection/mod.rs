@@ -36,7 +36,7 @@ impl CollisionWorld {
     pub fn step(&'static mut self) {
         for i in 0..self.collision_objects.len() {
             let obj_i = &self.collision_objects[i];
-            let pos_i = &obj_i.position;
+            let pos_i = &obj_i.transform;
             let shape_i = &obj_i.shape;
 
             for j in (i + 1)..self.collision_objects.len() {

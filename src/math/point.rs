@@ -1,6 +1,7 @@
 use super::{Real, Vec3};
 use std::{convert::From, ops::Add, ops::AddAssign, ops::Sub};
 
+#[derive(Copy, Clone)]
 pub struct P3 {
     pub x: Real,
     pub y: Real,
@@ -45,7 +46,21 @@ impl Sub for &P3 {
     fn sub(self, sub: Self) -> Self::Output {
         Vec3::new(self.x - sub.x, self.y - sub.y, self.z - sub.z)
     }
-}   
+}
+
+impl Add<&Vec3> for P3 {
+    type Output = P3;
+    fn add(self, a: &Vec3) -> Self::Output {
+        P3::new(self.x + a.x, self.y + a.y, self.z + a.z)
+    }
+}
+
+impl Add<Vec3> for &P3 {
+    type Output = P3;
+    fn add(self, a: Vec3) -> Self::Output {
+        P3::new(self.x + a.x, self.y + a.y, self.z + a.z)
+    }
+}
 
 impl Add<&Vec3> for &P3 {
     type Output = P3;

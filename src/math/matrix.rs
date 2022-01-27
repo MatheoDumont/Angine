@@ -1,4 +1,4 @@
-use super::{Real, Vec3};
+use super::{Real, Vec3, P3};
 use std::ops::Mul;
 
 /**
@@ -19,6 +19,14 @@ pub struct Mat3 {
 }
 
 impl Mat3 {
+    pub fn identity() -> Mat3 {
+        let zero = 0 as Real;
+        let one = 1 as Real;
+
+        Mat3 {
+            data: [[one, zero, zero], [zero, one, zero], [zero, zero, one]],
+        }
+    }
     pub fn zero() -> Mat3 {
         Mat3 {
             data: [[0 as Real; 3]; 3],
@@ -41,22 +49,6 @@ impl Mat3 {
 
     pub fn size(&self) -> (usize, usize) {
         (3, 3)
-    }
-
-    pub fn transpose(&mut self) {
-        // on transpose une matrice carré donc on ne touche jamais aux coefs sur la diag
-        // on opère juste des 'swap' symétriquement le long de la diag
-        let mut tmp = self.data[0][1];
-        self.data[0][1] = self.data[1][0];
-        self.data[1][0] = tmp;
-
-        tmp = self.data[0][2];
-        self.data[0][2] = self.data[2][0];
-        self.data[2][0] = tmp;
-
-        tmp = self.data[2][1];
-        self.data[2][1] = self.data[1][2];
-        self.data[1][2] = tmp;
     }
 
     pub fn col(&self, col: usize) -> Vec3 {
@@ -85,6 +77,112 @@ impl Mat3 {
 
     pub fn at_mut(&mut self, row: usize, col: usize) -> &mut Real {
         &mut self.data[row][col]
+    }
+
+    pub fn transpose(&mut self) {
+        // on transpose une matrice carré donc on ne touche jamais aux coefs sur la diag
+        // on opère juste des 'swap' symétriquement le long de la diag
+        let mut tmp = self.data[0][1];
+        self.data[0][1] = self.data[1][0];
+        self.data[1][0] = tmp;
+
+        tmp = self.data[0][2];
+        self.data[0][2] = self.data[2][0];
+        self.data[2][0] = tmp;
+
+        tmp = self.data[2][1];
+        self.data[2][1] = self.data[1][2];
+        self.data[1][2] = tmp;
+    }
+
+    pub fn transposed(&self) -> Mat3 {
+        // on transpose une matrice carré donc on ne touche jamais aux coefs sur la diag
+        // on opère juste des 'swap' symétriquement le long de la diag
+        let mut m = Mat3::identity();
+
+        for r in 0..3 {
+            for c in 0..3 {
+                m.data[r][c] = self.data[c][r];
+            }
+        }
+        m
+    }
+
+    /**
+     * Return a 2D Matrix filled with the elements of the Mat3 after removing Mat3.row(row) and Mat3.col(col)
+     *
+     * For example, if row and col are (0,0)
+     * | 1 2 3 |     | - - - |
+     * | 4 5 6 |  -> | - 5 6 | -> | 5 6 |
+     * | 7 8 9 |     | - 8 9 |    | 8 9 |
+     *
+     * Used to compute the minor of the element at (row, col)
+     */
+    fn cut(&self, row: usize, col: usize) -> [[Real; 2]; 2] {
+        let mut arr = [[0 as Real; 2]; 2];
+        let mut i: usize = 0;
+
+        for r in 0..3 {
+            if r == row {
+                continue;
+            }
+            for c in 0..3 {
+                if c == col {
+                    continue;
+                }
+                arr[i / 2][i % 2] = self.data[r][c];
+                i += 1;
+            }
+        }
+        arr
+    }
+
+    fn determinant_from_cut(arr: [[Real; 2]; 2]) -> Real {
+        arr[0][0] * arr[1][1] - arr[0][1] * arr[1][0]
+    }
+
+    fn determinant(&self) -> Real {
+        Mat3::determinant_from_cut(self.cut(0, 0)) * self.data[0][0]
+            - Mat3::determinant_from_cut(self.cut(0, 1)) * self.data[0][1]
+            + Mat3::determinant_from_cut(self.cut(0, 2)) * self.data[0][2]
+    }
+
+    pub fn minors(&self) -> Mat3 {
+        let mut m = Mat3::identity();
+
+        for r in 0..3 {
+            for c in 0..3 {
+                let arr = self.cut(r, c);
+                m.data[r][c] = Mat3::determinant_from_cut(arr);
+            }
+        }
+
+        m
+    }
+
+    pub fn cofactor_from(minors: &Mat3) -> Mat3 {
+        let mut cofactor = Mat3::identity();
+        let one_neg = -1 as Real;
+        for r in 0..3 {
+            for c in 0..3 {
+                cofactor.data[r][c] = minors.at(r, c) * one_neg.powi((r + c) as i32) as Real;
+            }
+        }
+        cofactor
+    }
+
+    pub fn adjugate_from(cofactors: &Mat3) -> Mat3 {
+        cofactors.transposed()
+    }
+
+    pub fn inverse(&self) -> Mat3 {
+        let det = self.determinant();
+        assert!(det != (0 as Real), "Matrice non-inversible, det(mat) = 0");
+
+        let minors = self.minors();
+        let cofactors = Mat3::cofactor_from(&minors);
+        let adj = Mat3::adjugate_from(&cofactors);
+        &adj * (1 as Real / det)
     }
 }
 
@@ -132,10 +230,44 @@ impl Mul<&Vec3> for &Mat3 {
     type Output = Vec3;
     fn mul(self, v: &Vec3) -> Self::Output {
         Vec3 {
-            x: self.data[0][1] * v.x + self.data[0][1] * v.y + self.data[0][2] * v.z,
-            y: self.data[1][1] * v.x + self.data[1][1] * v.y + self.data[1][2] * v.z,
-            z: self.data[2][1] * v.x + self.data[2][1] * v.y + self.data[2][2] * v.z,
+            x: self.data[0][0] * v.x + self.data[0][1] * v.y + self.data[0][2] * v.z,
+            y: self.data[1][0] * v.x + self.data[1][1] * v.y + self.data[1][2] * v.z,
+            z: self.data[2][0] * v.x + self.data[2][1] * v.y + self.data[2][2] * v.z,
         }
+    }
+}
+
+impl Mul<&P3> for &Mat3 {
+    type Output = P3;
+    fn mul(self, v: &P3) -> Self::Output {
+        P3 {
+            x: self.data[0][0] * v.x + self.data[0][1] * v.y + self.data[0][2] * v.z,
+            y: self.data[1][0] * v.x + self.data[1][1] * v.y + self.data[1][2] * v.z,
+            z: self.data[2][0] * v.x + self.data[2][1] * v.y + self.data[2][2] * v.z,
+        }
+    }
+}
+
+impl Mul<Real> for &Mat3 {
+    type Output = Mat3;
+    fn mul(self, v: Real) -> Self::Output {
+        Mat3::from_array([
+            [
+                self.data[0][0] * v,
+                self.data[0][1] * v,
+                self.data[0][2] * v,
+            ],
+            [
+                self.data[1][0] * v,
+                self.data[1][1] * v,
+                self.data[1][2] * v,
+            ],
+            [
+                self.data[2][0] * v,
+                self.data[2][1] * v,
+                self.data[2][2] * v,
+            ],
+        ])
     }
 }
 
@@ -170,5 +302,52 @@ mod tests {
         assert_eq!(m.at(0, 2), &l_r0 * &r_c2);
         assert_eq!(m.at(1, 2), &l_r1 * &r_c2);
         assert_eq!(m.at(2, 2), &l_r2 * &r_c2);
+    }
+    #[test]
+    fn cut() {
+        let arr = [[1, 2, 3], [4, 5, 6], [7, 8, 9]].map(|e| e.map(|b| b as Real));
+        let m = Mat3::from_array(arr);
+        let arr = m.cut(0, 0);
+
+        assert_eq!(arr[0][0], 5 as Real);
+        assert_eq!(arr[0][1], 6 as Real);
+        assert_eq!(arr[1][0], 8 as Real);
+        assert_eq!(arr[1][1], 9 as Real);
+    }
+
+    #[test]
+    fn determinant() {
+        {
+            let arr = [[1, 2, 3], [4, 5, 6], [7, 8, 9]].map(|e| e.map(|b| b as Real));
+            let m = Mat3::from_array(arr);
+
+            assert_eq!(m.determinant(), 0 as Real);
+        }
+
+        {
+            let arr = [[1, 2, 3], [4, 5, 6], [7, 8, 10]].map(|e| e.map(|b| b as Real));
+            let m = Mat3::from_array(arr);
+
+            assert_eq!(m.determinant(), -3 as Real);
+        }
+    }
+    #[test]
+    fn inverse() {
+        let arr = [[1, 2, 3], [4, 5, 6], [7, 8, 10]].map(|e| e.map(|b| b as Real));
+        let m = Mat3::from_array(arr);
+
+        let inv = m.inverse();
+
+        let id = &m * &inv;
+        // assert that M*M⁻1 = Identity 
+        for r in 0..3 {
+            for c in 0..3 {
+                if r == c {
+                    assert_eq!(id.data[r][c], 1 as Real);
+                } else {
+                    assert_eq!(id.data[r][c], 0 as Real);
+                }
+            }
+        }
     }
 }

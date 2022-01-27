@@ -1,4 +1,4 @@
-use crate::math::{P3, Vec3, Real};
+use crate::math::{P3, Vec3, Transform};
 use super::shapes::Shape;
 
 pub struct CollisionData {
@@ -10,16 +10,16 @@ pub struct CollisionObject {
     pub enabled: bool,
     pub id: u32,
     pub shape: Box<dyn Shape>,
-    pub position: P3,
+    pub transform: Transform,
 }
 
 impl CollisionObject {
-    pub fn new(position: P3, shape: Box<dyn Shape>) -> CollisionObject {
+    pub fn new(transform: Transform, shape: Box<dyn Shape>) -> CollisionObject {
         CollisionObject {
             enabled: true,
             id: 0,
             shape: shape,
-            position: position,
+            transform: transform,
         }
     }
 }

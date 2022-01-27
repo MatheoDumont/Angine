@@ -16,7 +16,7 @@ impl Sphere {
 impl Shape for Sphere {
     fn inertia_matrix(&self) -> Vec3 {
         // pour l'instant
-        Vec3::zeros()
+        Vec3::zero()
     }
 
     fn shape_type(&self) -> ShapeType {
