@@ -37,6 +37,14 @@ impl Mat3 {
         Mat3 { data: [[v; 3]; 3] }
     }
 
+    pub fn diag(v: Vec3) -> Mat3 {
+        let zero = 0 as Real;
+
+        Mat3 {
+            data: [[v.x, zero, zero], [zero, v.y, zero], [zero, zero, v.z]],
+        }
+    }
+
     pub fn from_array(arr: [[Real; 3]; 3]) -> Mat3 {
         Mat3 { data: arr }
     }
@@ -226,6 +234,46 @@ impl Mul for &Mat3 {
     }
 }
 
+#[rustfmt::skip]
+impl Mul for Mat3 {
+    type Output = Mat3;
+    fn mul(self, r: Self) -> Self::Output {
+        let mut m = Mat3::zero();
+
+        *m.at_mut(0, 0) = self.at_ref(0, 0) * r.at_ref(0, 0) // left row0 * right col0
+                        + self.at_ref(0, 1) * r.at_ref(1, 0)
+                        + self.at_ref(0, 2) * r.at_ref(2, 0);
+        *m.at_mut(1, 0) = self.at_ref(1, 0) * r.at_ref(0, 0) // left row1 * right col0
+                        + self.at_ref(1, 1) * r.at_ref(1, 0)
+                        + self.at_ref(1, 2) * r.at_ref(2, 0);
+        *m.at_mut(2, 0) = self.at_ref(2, 0) * r.at_ref(0, 0) // left row2 * right col0
+                        + self.at_ref(2, 1) * r.at_ref(1, 0)
+                        + self.at_ref(2, 2) * r.at_ref(2, 0);
+
+        *m.at_mut(0, 1) = self.at_ref(0, 0) * r.at_ref(0, 1) // left row0 * right col1
+                        + self.at_ref(0, 1) * r.at_ref(1, 1)
+                        + self.at_ref(0, 2) * r.at_ref(2, 1);
+        *m.at_mut(1, 1) = self.at_ref(1, 0) * r.at_ref(0, 1) // left row1 * right col1
+                        + self.at_ref(1, 1) * r.at_ref(1, 1)
+                        + self.at_ref(1, 2) * r.at_ref(2, 1);
+        *m.at_mut(2, 1) = self.at_ref(2, 0) * r.at_ref(0, 1) // left row2 * right col1
+                        + self.at_ref(2, 1) * r.at_ref(1, 1)
+                        + self.at_ref(2, 2) * r.at_ref(2, 1);
+
+        *m.at_mut(0, 2) = self.at_ref(0, 0) * r.at_ref(0, 2) // left row0 * right col2
+                        + self.at_ref(0, 1) * r.at_ref(1, 2)
+                        + self.at_ref(0, 2) * r.at_ref(2, 2);
+        *m.at_mut(1, 2) = self.at_ref(1, 0) * r.at_ref(0, 2) // left row1 * right col2
+                        + self.at_ref(1, 1) * r.at_ref(1, 2)
+                        + self.at_ref(1, 2) * r.at_ref(2, 2);
+        *m.at_mut(2, 2) = self.at_ref(2, 0) * r.at_ref(0, 2) // left row2 * right col2
+                        + self.at_ref(2, 1) * r.at_ref(1, 2)
+                        + self.at_ref(2, 2) * r.at_ref(2, 2);
+
+        m
+    }
+}
+
 impl Mul<&Vec3> for &Mat3 {
     type Output = Vec3;
     fn mul(self, v: &Vec3) -> Self::Output {
@@ -339,7 +387,7 @@ mod tests {
         let inv = m.inverse();
 
         let id = &m * &inv;
-        // assert that M*M⁻1 = Identity 
+        // assert that M*M⁻1 = Identity
         for r in 0..3 {
             for c in 0..3 {
                 if r == c {
