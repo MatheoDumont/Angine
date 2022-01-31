@@ -1,55 +1,113 @@
-use super::{Mat3, Real, Vec3, P3};
+use super::{Mat3, Real, Vec3, ONE, P3, ZERO};
+
 use std::ops::Mul;
 
 /**
  * pitch is a radian
  */
-pub fn Xrotation(pitch: Real) -> Mat3 {
-    let zero = 0 as Real;
-    let c = pitch.cos();
-    let s = pitch.sin();
-    Mat3::from_array([[1 as Real, zero, zero], [zero, c, s], [zero, -s, c]])
-}
-pub fn Yrotation(yaw: Real) -> Mat3 {
-    let zero = 0 as Real;
-    let c = yaw.cos();
-    let s = yaw.sin();
-    Mat3::from_array([[c, zero, -s], [zero, 1 as Real, zero], [s, zero, c]])
-}
-pub fn Zrotation(roll: Real) -> Mat3 {
-    let zero = 0 as Real;
-    let c = roll.cos();
-    let s = roll.sin();
-    Mat3::from_array([[c, s, zero], [-s, c, zero], [zero, zero, 1 as Real]])
+
+pub struct Rotation;
+
+impl Rotation {
+    pub fn X(pitch: Real) -> Mat3 {
+        let c = pitch.cos();
+        let s = pitch.sin();
+        Mat3::from_array([[ONE, ZERO, ZERO], [ZERO, c, -s], [ZERO, s, c]])
+    }
+    pub fn Y(yaw: Real) -> Mat3 {
+        let c = yaw.cos();
+        let s = yaw.sin();
+        Mat3::from_array([[c, ZERO, s], [ZERO, ONE, ZERO], [-s, ZERO, c]])
+    }
+    pub fn Z(roll: Real) -> Mat3 {
+        let c = roll.cos();
+        let s = roll.sin();
+        Mat3::from_array([[c, -s, ZERO], [s, c, ZERO], [ZERO, ZERO, ONE]])
+    }
+
+    pub fn compose(x_axis_rad: Real, y_axis_rad: Real, z_axis_rad: Real) -> Mat3 {
+        Rotation::Z(z_axis_rad) * Rotation::X(x_axis_rad) * Rotation::Y(y_axis_rad)
+    }
+
+    pub fn axis_angle(normalized_axis: Vec3, rad: Real) -> Mat3 {
+        let c = rad.cos();
+        let s = rad.sin();
+        let t = (ONE) - c;
+        let x = normalized_axis.x;
+        let y = normalized_axis.y;
+        let z = normalized_axis.z;
+
+        let op1 = t * x * y + s * z;
+        let op2 = t * x * z + s * y;
+        let op3 = t * y * z + s * x;
+
+        Mat3::from_array([
+            [t * x * x + c, op1, op2],
+            [op1, t * y * y + c, op3],
+            [op2, op3, t * z * z + c],
+        ])
+    }
 }
 
-pub fn rotation(x_axis_rad: Real, y_axis_rad: Real, z_axis_rad: Real) -> Mat3 {
-    Zrotation(z_axis_rad) * Xrotation(x_axis_rad) * Yrotation(y_axis_rad)
+pub trait Directions<T> {
+    fn up() -> T;
+    fn down() -> T;
+    fn forward() -> T;
+    fn backward() -> T;
+    fn left() -> T;
+    fn right() -> T;
 }
 
-pub fn rotation_axis_angle(normalized_axis: Vec3, rad: Real) -> Mat3 {
-    let c = rad.cos();
-    let s = rad.sin();
-    let t = (1 as Real) - c;
-    let x = normalized_axis.x;
-    let y = normalized_axis.y;
-    let z = normalized_axis.z;
-
-    let op1 = t * x * y + s * z;
-    let op2 = t * x * z + s * y;
-    let op3 = t * y * z + s * x;
-
-    Mat3::from_array([
-        [t * x * x + c, op1, op2],
-        [op1, t * y * y + c, op3],
-        [op2, op3, t * z * z + c],
-    ])
+impl Directions<Vec3> for Vec3 {
+    fn up() -> Vec3 {
+        Vec3 {
+            x: ZERO,
+            y: ZERO,
+            z: ONE,
+        }
+    }
+    fn down() -> Vec3 {
+        Vec3 {
+            x: ZERO,
+            y: ZERO,
+            z: -ONE,
+        }
+    }
+    fn forward() -> Vec3 {
+        Vec3 {
+            x: ZERO,
+            y: ONE,
+            z: ZERO,
+        }
+    }
+    fn backward() -> Vec3 {
+        Vec3 {
+            x: ZERO,
+            y: -ONE,
+            z: ZERO,
+        }
+    }
+    fn left() -> Vec3 {
+        Vec3 {
+            x: -ONE,
+            y: ZERO,
+            z: ZERO,
+        }
+    }
+    fn right() -> Vec3 {
+        Vec3 {
+            x: ONE,
+            y: ZERO,
+            z: ZERO,
+        }
+    }
 }
+
 /**
- * La class Transform contient une Mat3 pour la rotation et un Vec3 pour la translation.
- * Elle permet de changer un point ou un vecteur de repère, passer du repère local vers monde par exemple.
- * Donc elle doit fournir les opérations nécessaires :
+ * La classe Transform contient une Mat3 pour la rotation, le scale, et un Vec3 pour la translation.
+ * Elle permet de changer un point de repère ou de rotate un vecteur.
  *
+ *  
  */
 pub struct Transform {
     rotation: Mat3,
@@ -105,8 +163,57 @@ impl Mul for Transform {
 
     fn mul(self, o: Self) -> Self {
         Transform {
+            rotation: self.rotation * o.rotation,
+            translation: self.translation + o.translation,
+        }
+    }
+}
+
+impl Mul for &Transform {
+    type Output = Transform;
+
+    fn mul(self, o: Self) -> Self::Output {
+        Transform {
             rotation: &self.rotation * &o.rotation,
             translation: &self.translation + &o.translation,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assert_approx_eq::assert_approx_eq;
+
+    #[test]
+    fn rotation_all_axis_test() {
+        let rad = std::f32::consts::FRAC_PI_2;
+        // Z rotation
+        {
+            let v = Vec3::new(ONE, ZERO, ZERO);
+            let rotated = Rotation::Z(rad) * v;
+            // println!("{:?}", rotated);
+            assert_approx_eq!(rotated.x, ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.y, ONE, 1.0e-6);
+            assert_approx_eq!(rotated.z, ZERO, 1.0e-6);
+        }
+        // Y rotation
+        {
+            let v = Vec3::new(ZERO, ZERO, ONE);
+            let rotated = Rotation::Y(rad) * v;
+            // println!("{:?}", rotated);
+            assert_approx_eq!(rotated.x, ONE, 1.0e-6);
+            assert_approx_eq!(rotated.y, ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.z, ZERO, 1.0e-6);
+        }
+        // X rotation
+        {
+            let v = Vec3::new(ZERO, ONE, ZERO);
+            let rotated = Rotation::X(rad) * v;
+            // println!("{:?}", rotated);
+            assert_approx_eq!(rotated.x, ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.y, ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.z, ONE, 1.0e-6);
         }
     }
 }

@@ -1,10 +1,10 @@
-use super::{Real, P3};
+use super::{Real, P3, ZERO};
 use std::{
     convert::From,
     ops::{Add, Div, DivAssign, Mul, MulAssign, Sub},
 };
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Vec3 {
     pub x: Real,
     pub y: Real,
@@ -17,11 +17,27 @@ impl From<&P3> for Vec3 {
     }
 }
 
+impl Add for Vec3 {
+    type Output = Vec3;
+
+    fn add(self, v: Self) -> Self::Output {
+        Vec3::new(self.x + v.x, self.y + v.y, self.z + v.z)
+    }
+}
+
 impl Add for &Vec3 {
     type Output = Vec3;
 
     fn add(self, v: Self) -> Self::Output {
         Vec3::new(self.x + v.x, self.y + v.y, self.z + v.z)
+    }
+}
+
+impl Sub for Vec3 {
+    type Output = Vec3;
+
+    fn sub(self, v: Self) -> Self::Output {
+        Vec3::new(self.x - v.x, self.y - v.y, self.z - v.z)
     }
 }
 
@@ -33,13 +49,13 @@ impl Sub for &Vec3 {
     }
 }
 
-// impl Div<Real> for Vec3 {
-//     type Output = Vec3;
+impl Div<Real> for Vec3 {
+    type Output = Vec3;
 
-//     fn div(self, divisor: Real) -> Self::Output {
-//         Vec3::new(self.x / divisor, self.y / divisor, self.z / divisor)
-//     }
-// }
+    fn div(self, divisor: Real) -> Self::Output {
+        Vec3::new(self.x / divisor, self.y / divisor, self.z / divisor)
+    }
+}
 
 impl Div<Real> for &Vec3 {
     type Output = Vec3;
@@ -57,6 +73,14 @@ impl DivAssign<Real> for Vec3 {
     }
 }
 
+impl Mul for Vec3 {
+    type Output = Real;
+
+    fn mul(self, m: Self) -> Self::Output {
+        self.dot(&m)
+    }
+}
+
 impl Mul for &Vec3 {
     type Output = Real;
 
@@ -65,17 +89,17 @@ impl Mul for &Vec3 {
     }
 }
 
-// impl Mul<Real> for Vec3 {
-//     type Output = Vec3;
+impl Mul<Real> for Vec3 {
+    type Output = Vec3;
 
-//     fn mul(self, m: Real) -> Self::Output {
-//         Vec3 {
-//             x: self.x * m,
-//             y: self.y * m,
-//             z: self.z * m,
-//         }
-//     }
-// }
+    fn mul(self, m: Real) -> Self::Output {
+        Vec3 {
+            x: self.x * m,
+            y: self.y * m,
+            z: self.z * m,
+        }
+    }
+}
 
 impl Mul<Real> for &Vec3 {
     type Output = Vec3;
@@ -102,7 +126,7 @@ impl Vec3 {
         Vec3 { x: x, y: y, z: z }
     }
     pub fn zero() -> Vec3 {
-        Vec3::new(0 as Real, 0 as Real, 0 as Real)
+        Vec3::new(ZERO, ZERO, ZERO)
     }
 
     pub fn norm_squared(&self) -> Real {

@@ -1,4 +1,4 @@
-use super::{Real, Vec3};
+use super::{Real, Vec3, ZERO};
 use std::{convert::From, ops::Add, ops::AddAssign, ops::Sub};
 
 #[derive(Copy, Clone)]
@@ -15,9 +15,9 @@ impl P3 {
 
     pub fn origin() -> P3 {
         P3 {
-            x: 0 as Real,
-            y: 0 as Real,
-            z: 0 as Real,
+            x: ZERO,
+            y: ZERO,
+            z: ZERO,
         }
     }
 
