@@ -62,7 +62,7 @@ impl OBB {
         for i in 0..self.transform.rotation.size().0 {
             let axis = self.transform.rotation.row(i);
             let scalar = axis.dot(&p_to_obb);
-            new_p[i] += helper::clamp(scalar, -self.half_side[i], self.half_side[i]);
+            new_p += axis * helper::clamp(scalar, -self.half_side[i], self.half_side[i]);
         }
 
         new_p
@@ -92,11 +92,15 @@ mod tests {
             }
             // inside
             {
-                {
-                    let p = P3::new(0.5, 0.5, 0.5);
-                    assert_eq!(obb.is_inside(&p), true);
-                }
+                let p = P3::new(0.5, 0.5, 0.5);
+                assert_eq!(obb.is_inside(&p), true);
             }
+
+            let obb = OBB::new(Vec3::new(ONE, ONE, 2.0), Transform::identity());
+            // inside
+
+            let p = P3::new(0.5, 0.5, 3.0);
+            assert_eq!(obb.is_inside(&p), false);
         }
         // rotated
         {
@@ -137,18 +141,30 @@ mod tests {
         }
         // rotated
         {
-            let obb = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_2)),
-            );
+            {
+                let obb = OBB::new(
+                    Vec3::new(ONE, ONE, ONE),
+                    Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
+                );
 
+                let p = obb.closest_point(&P3::new(0.0, 2.0, 0.0));
 
+                assert_eq!(p[0], ZERO);
+                assert_eq!(p[1], (2 as f32).sqrt());
+                assert_eq!(p[2], ZERO);
+            }
 
-            let p = obb.closest_point(&P3::new(2.0, 0.0, 0.0));
-            println!("{:?}", p);
-            assert_eq!(p[0], (2 as f32).sqrt());
-            assert_eq!(p[1], ZERO);
-            assert_eq!(p[2], ZERO);
+            {
+                let obb = OBB::new(
+                    Vec3::new(ONE, ONE, 2.0),
+                    Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
+                );
+                let p = obb.closest_point(&P3::new(0.0, 2.0, 2.0));
+
+                assert_eq!(p[0], ZERO);
+                assert_eq!(p[1], (2 as f32).sqrt());
+                assert_eq!(p[2], 2.0);
+            }
         }
     }
 }
