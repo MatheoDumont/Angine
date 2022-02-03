@@ -2,13 +2,12 @@ use super::{Mat3, Real, Vec3, ONE, P3, ZERO};
 
 use std::ops::Mul;
 
-/**
- * pitch is a radian
- */
-
 pub struct Rotation;
 
 impl Rotation {
+    /**
+     * All angles are in radian
+     */
     pub fn X(pitch: Real) -> Mat3 {
         let c = pitch.cos();
         let s = pitch.sin();
@@ -25,14 +24,14 @@ impl Rotation {
         Mat3::from_array([[c, -s, ZERO], [s, c, ZERO], [ZERO, ZERO, ONE]])
     }
 
-    pub fn compose(x_axis_rad: Real, y_axis_rad: Real, z_axis_rad: Real) -> Mat3 {
+    pub fn composed(x_axis_rad: Real, y_axis_rad: Real, z_axis_rad: Real) -> Mat3 {
         Rotation::Z(z_axis_rad) * Rotation::X(x_axis_rad) * Rotation::Y(y_axis_rad)
     }
 
     pub fn axis_angle(normalized_axis: Vec3, rad: Real) -> Mat3 {
         let c = rad.cos();
         let s = rad.sin();
-        let t = (ONE) - c;
+        let t = ONE - c;
         let x = normalized_axis.x;
         let y = normalized_axis.y;
         let z = normalized_axis.z;
@@ -49,60 +48,6 @@ impl Rotation {
     }
 }
 
-pub trait Directions<T> {
-    fn up() -> T;
-    fn down() -> T;
-    fn forward() -> T;
-    fn backward() -> T;
-    fn left() -> T;
-    fn right() -> T;
-}
-
-impl Directions<Vec3> for Vec3 {
-    fn up() -> Vec3 {
-        Vec3 {
-            x: ZERO,
-            y: ZERO,
-            z: ONE,
-        }
-    }
-    fn down() -> Vec3 {
-        Vec3 {
-            x: ZERO,
-            y: ZERO,
-            z: -ONE,
-        }
-    }
-    fn forward() -> Vec3 {
-        Vec3 {
-            x: ZERO,
-            y: ONE,
-            z: ZERO,
-        }
-    }
-    fn backward() -> Vec3 {
-        Vec3 {
-            x: ZERO,
-            y: -ONE,
-            z: ZERO,
-        }
-    }
-    fn left() -> Vec3 {
-        Vec3 {
-            x: -ONE,
-            y: ZERO,
-            z: ZERO,
-        }
-    }
-    fn right() -> Vec3 {
-        Vec3 {
-            x: ONE,
-            y: ZERO,
-            z: ZERO,
-        }
-    }
-}
-
 /**
  * La classe Transform contient une Mat3 pour la rotation, le scale, et un Vec3 pour la translation.
  * Elle permet de changer un point de repère ou de rotate un vecteur.
@@ -110,8 +55,8 @@ impl Directions<Vec3> for Vec3 {
  *  
  */
 pub struct Transform {
-    rotation: Mat3,
-    translation: Vec3,
+    pub rotation: Mat3,
+    pub translation: Vec3,
 }
 
 impl Transform {
@@ -186,7 +131,7 @@ mod tests {
     use assert_approx_eq::assert_approx_eq;
 
     #[test]
-    fn rotation_all_axis_test() {
+    fn rotation_methods_test() {
         let rad = std::f32::consts::FRAC_PI_2;
         // Z rotation
         {
@@ -214,6 +159,27 @@ mod tests {
             assert_approx_eq!(rotated.x, ZERO, 1.0e-6);
             assert_approx_eq!(rotated.y, ZERO, 1.0e-6);
             assert_approx_eq!(rotated.z, ONE, 1.0e-6);
+        }
+
+        // composed
+        {
+            let v = Vec3::new(ONE, ZERO, ZERO);
+            let rotated = Rotation::composed(rad, rad, rad) * v;
+            // println!("{:?}", rotated);
+            assert_approx_eq!(rotated.x, -ONE, 1.0e-6);
+            assert_approx_eq!(rotated.y, ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.z, ZERO, 1.0e-6);
+        }
+
+        // axis angle
+        {
+            let z_axis = Vec3::new(ZERO, ZERO, ONE);
+            let v = Vec3::new(ONE, ZERO, ZERO);
+            let rotated = Rotation::axis_angle(z_axis, rad) * v;
+            // println!("{:?}", rotated);
+            assert_approx_eq!(rotated.x, ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.y, ONE, 1.0e-6);
+            assert_approx_eq!(rotated.z, ZERO, 1.0e-6);
         }
     }
 }

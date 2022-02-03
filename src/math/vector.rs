@@ -1,7 +1,7 @@
-use super::{Real, P3, ZERO};
+use super::{Real, ONE, P3, ZERO};
 use std::{
     convert::From,
-    ops::{Add, Div, DivAssign, Mul, MulAssign, Sub},
+    ops::{Add, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub},
 };
 
 #[derive(Copy, Clone, Debug)]
@@ -13,7 +13,12 @@ pub struct Vec3 {
 
 impl From<&P3> for Vec3 {
     fn from(p: &P3) -> Self {
-        Vec3::new(p.x, p.y, p.z)
+        Vec3::new(p[0], p[1], p[2])
+    }
+}
+impl From<P3> for Vec3 {
+    fn from(p: P3) -> Self {
+        Vec3::new(p[0], p[1], p[2])
     }
 }
 
@@ -121,6 +126,27 @@ impl MulAssign<Real> for Vec3 {
     }
 }
 
+impl Index<usize> for Vec3 {
+    type Output = Real;
+    fn index(&self, index: usize) -> &Self::Output {
+        debug_assert!(index < 3);
+        let ptr_x = std::ptr::addr_of!(self.x);
+
+        let r = unsafe { ptr_x.offset(index.try_into().unwrap()).as_ref().unwrap() };
+        r
+    }
+}
+
+impl IndexMut<usize> for Vec3 {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        debug_assert!(index < 3);
+        let ptr_x = std::ptr::addr_of_mut!(self.x); // sinon &mut self.x as *mut Real
+
+        let r = unsafe { ptr_x.offset(index.try_into().unwrap()).as_mut().unwrap() };
+        r
+    }
+}
+
 impl Vec3 {
     pub fn new(x: Real, y: Real, z: Real) -> Vec3 {
         Vec3 { x: x, y: y, z: z }
@@ -198,6 +224,49 @@ impl Vec3 {
         let perp2 = &self.perpendicular_normalized(d) * (2 as Real);
         d - &perp2
     }
+
+    pub fn up() -> Vec3 {
+        Vec3 {
+            x: ZERO,
+            y: ONE,
+            z: ZERO,
+        }
+    }
+    pub fn down() -> Vec3 {
+        Vec3 {
+            x: ZERO,
+            y: -ONE,
+            z: ZERO,
+        }
+    }
+    pub fn forward() -> Vec3 {
+        Vec3 {
+            x: ZERO,
+            y: ZERO,
+            z: ONE,
+        }
+    }
+    pub fn backward() -> Vec3 {
+        Vec3 {
+            x: ZERO,
+            y: ZERO,
+            z: -ONE,
+        }
+    }
+    pub fn left() -> Vec3 {
+        Vec3 {
+            x: -ONE,
+            y: ZERO,
+            z: ZERO,
+        }
+    }
+    pub fn right() -> Vec3 {
+        Vec3 {
+            x: ONE,
+            y: ZERO,
+            z: ZERO,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -253,5 +322,19 @@ mod tests {
         let vv = Vec3::new(0.5, 0.4, 0.6);
 
         assert_eq!(&v * &vv, 0.5 + 0.8 + 1.8);
+    }
+
+    #[test]
+    fn vector_index() {
+        let mut v = Vec3::up();
+        assert_eq!(v[0], ZERO);
+        assert_eq!(v[1], ONE);
+        assert_eq!(v[2], ZERO);
+
+        v.x = 0.5;
+        assert_eq!(v[0], 0.5);
+
+        v[0] *= 2.0;
+        assert_eq!(v[0], ONE);
     }
 }

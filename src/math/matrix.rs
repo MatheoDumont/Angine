@@ -13,7 +13,7 @@ use std::ops::Mul;
  *      La type de données est uniquement Real, définit dans math.rs, qui est commun au projet entier.
  *
  */
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Mat3 {
     data: [[Real; 3]; 3],
 }
@@ -294,20 +294,23 @@ impl Mul<&P3> for &Mat3 {
     type Output = P3;
     fn mul(self, v: &P3) -> Self::Output {
         P3 {
-            x: self.data[0][0] * v.x + self.data[0][1] * v.y + self.data[0][2] * v.z,
-            y: self.data[1][0] * v.x + self.data[1][1] * v.y + self.data[1][2] * v.z,
-            z: self.data[2][0] * v.x + self.data[2][1] * v.y + self.data[2][2] * v.z,
+            values: [
+                self.data[0][0] * v[0] + self.data[0][1] * v[1] + self.data[0][2] * v[2],
+                self.data[1][0] * v[0] + self.data[1][1] * v[1] + self.data[1][2] * v[2],
+                self.data[2][0] * v[0] + self.data[2][1] * v[1] + self.data[2][2] * v[2],
+            ],
         }
     }
 }
-
 impl Mul<P3> for Mat3 {
     type Output = P3;
     fn mul(self, v: P3) -> Self::Output {
         P3 {
-            x: self.data[0][0] * v.x + self.data[0][1] * v.y + self.data[0][2] * v.z,
-            y: self.data[1][0] * v.x + self.data[1][1] * v.y + self.data[1][2] * v.z,
-            z: self.data[2][0] * v.x + self.data[2][1] * v.y + self.data[2][2] * v.z,
+            values: [
+                self.data[0][0] * v[0] + self.data[0][1] * v[1] + self.data[0][2] * v[2],
+                self.data[1][0] * v[0] + self.data[1][1] * v[1] + self.data[1][2] * v[2],
+                self.data[2][0] * v[0] + self.data[2][1] * v[1] + self.data[2][2] * v[2],
+            ],
         }
     }
 }

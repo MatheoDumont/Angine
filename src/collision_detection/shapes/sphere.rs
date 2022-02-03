@@ -1,25 +1,33 @@
 use super::{Shape, ShapeType};
-use crate::math::{Real, Vec3};
+use crate::math::{Mat3, Real, Transform, Vec3, P3};
 
 pub struct Sphere {
     pub radius: Real, // radius in ]0, +inf[ but no check
+    pub position: P3,
 }
 
 impl Sphere {
-    pub fn new(_radius: Real) -> Self {
+    pub fn new(radius: Real, position: P3) -> Self {
         Self {
-            radius: _radius,
+            radius: radius,
+            position: position,
         }
+    }
+
+    pub fn closest_point(&self, p: P3) -> P3 {
+        &self.position + (p - self.position).normalized() * self.radius
     }
 }
 
 impl Shape for Sphere {
     fn inertia_matrix(&self) -> Vec3 {
         // pour l'instant
-        Vec3::zero()
+        panic!("inertia matrix for Sphere not implemented");
     }
 
     fn shape_type(&self) -> ShapeType {
         ShapeType::Sphere
     }
+
+  
 }
