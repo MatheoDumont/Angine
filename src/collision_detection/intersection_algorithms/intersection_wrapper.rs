@@ -1,30 +1,16 @@
 use crate::collision_detection::collision::CollisionObject;
-use crate::collision_detection::intersection_algorithm;
+
 use crate::collision_detection::shapes::{Shape, ShapeType, Sphere};
-use crate::math::{P3, Vec3};
-
-
+use crate::math::{Vec3, P3};
 
 pub trait IntersectionAlgoHandler {
-    fn compute(
-        &self,
-        p1: &'static P3,
-        s1: &Box<dyn Shape>,
-        p2: &'static P3,
-        s2: &Box<dyn Shape>,
-    ) -> bool;
+    fn compute(&self, s1: &Box<dyn Shape>, s2: &Box<dyn Shape>) -> bool;
 }
 
 struct SphereToSphere;
 
 impl IntersectionAlgoHandler for SphereToSphere {
-    fn compute(
-        &self,
-        p1: &'static P3,
-        shape1: &Box<dyn Shape>,
-        p2: &'static P3,
-        shape2: &Box<dyn Shape>,
-    ) -> bool {
+    fn compute(&self, shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> bool {
         let sphere1 = shape1
             .downcast_ref::<Sphere>()
             .expect("Tried to downcast to Sphere");
@@ -32,7 +18,7 @@ impl IntersectionAlgoHandler for SphereToSphere {
             .downcast_ref::<Sphere>()
             .expect("Tried to downcast to Sphere");
 
-        intersection_algorithm::sphere_sphere(p1, sphere1, p2, sphere2)
+        super::sphere::sphere_sphere(sphere1, sphere2)
     }
 }
 

@@ -1,21 +1,18 @@
 use self::{
-    collision::{CollisionObject, CollisionData},
-    intersection_wrapper::{
-        get_intersection_fn_by_collisiontypes, IntersectionAlgoHandler,
-    },
+    collision::{CollisionData, CollisionObject},
+    intersection_algorithms::intersection_wrapper::get_intersection_fn_by_collisiontypes,
 };
 
 use std::vec::Vec;
 
-pub mod shapes;
 pub mod collision;
-pub mod intersection_algorithm;
-pub mod intersection_wrapper;
+pub mod intersection_algorithms;
+pub mod shapes;
 
 pub struct CollisionWorld {
     collision_objects: Vec<CollisionObject>,
     detected_intersections: Vec<CollisionData>,
-    id_counter: u32, // used to give a number to CollisionObject
+    id_counter: u32, // used to give a number to each CollisionObject
 }
 
 impl CollisionWorld {

@@ -5,8 +5,8 @@ use crate::math::{helper, Real, Transform, Vec3, P3};
  * Oriented Bounding Box
  */
 pub struct OBB {
-    half_side: Vec3,
-    transform: Transform,
+    pub half_side: Vec3,
+    pub transform: Transform,
 }
 
 impl OBB {
