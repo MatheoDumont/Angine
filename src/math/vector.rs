@@ -154,6 +154,9 @@ impl Vec3 {
     pub fn zero() -> Vec3 {
         Vec3::new(ZERO, ZERO, ZERO)
     }
+    pub fn ones() -> Vec3 {
+        Vec3::new(ONE, ONE, ONE)
+    }
 
     pub fn norm_squared(&self) -> Real {
         self.x.powi(2) + self.y.powi(2) + self.z.powi(2)
@@ -175,6 +178,9 @@ impl Vec3 {
 
     pub fn dot(&self, o: &Vec3) -> Real {
         self.x * o.x + self.y * o.y + self.z * o.z
+    }
+    pub fn dot_point(&self, p: &P3) -> Real {
+        self.x * p[0] + self.y * p[1] + self.z * p[2]
     }
 
     pub fn cross(&self, o: &Vec3) -> Vec3 {

@@ -29,7 +29,10 @@ impl Plane {
      * 0 if on
      */
     pub fn signed_distance(&self, p: &P3) -> Real {
-        &Vec3::from(p).dot(&self.normal) - self.distance_from_origin
+        self.normal.dot_point(p) - self.distance_from_origin
+    }
+    pub fn signed_distance_vec(&self, v: &Vec3) -> Real {
+        self.normal.dot(v) - self.distance_from_origin
     }
 }
 

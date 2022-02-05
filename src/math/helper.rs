@@ -11,3 +11,11 @@ pub fn clamp(x: Real, min: Real, max: Real) -> Real {
         x
     }
 }
+
+pub fn sign(x: Real) -> Real {
+    if x > ZERO {
+        ONE
+    } else {
+        -ONE
+    }
+}
