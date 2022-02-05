@@ -12,7 +12,7 @@ pub fn sphere_sphere(sphere_a: &Sphere, sphere_b: &Sphere) -> bool {
 mod tests {
     use super::*;
     #[test]
-    fn sphere_sphere_method() {
+    fn sphere_sphere_intersection() {
         {
             let p1 = P3::origin();
             let p2 = P3::new(1 as Real, 0 as Real, 0 as Real);

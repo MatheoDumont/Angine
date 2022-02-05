@@ -15,7 +15,7 @@ mod tests {
     use crate::collision_detection::shapes::Plane;
     use crate::math::{Vec3, ONE, P3, ZERO};
     #[test]
-    fn plane_plane_method() {
+    fn plane_plane_intersection() {
         {
             let pl1 = Plane::new(Vec3::up(), P3::origin());
             let mut pl2 = Plane::new(Vec3::up(), P3::origin());
