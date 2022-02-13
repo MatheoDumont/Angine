@@ -1,5 +1,5 @@
 use super::{Shape, ShapeType};
-use crate::math::{Real, Transform, Vec3, ONE, P3};
+use crate::math::{Real, Transform, Vec3, ONE, P3, Mat3};
 
 pub struct Plane {
     pub normal: Vec3,
@@ -37,7 +37,7 @@ impl Plane {
 }
 
 impl Shape for Plane {
-    fn inertia_matrix(&self) -> Vec3 {
+    fn inertia_matrix(&self, mass: Real) -> Mat3 {
         // pour l'instant
         panic!("inertia matrix for Plane not implemented");
     }

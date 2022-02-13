@@ -1,4 +1,4 @@
-use crate::collision_detection::shapes::{Sphere, OBB};
+use crate::engine::shapes::{Sphere, OBB};
 
 pub fn obb_sphere(obb: &OBB, sphere: &Sphere) -> bool {
     (sphere.position - obb.closest_point(&sphere.position)).norm_squared()
@@ -8,7 +8,7 @@ pub fn obb_sphere(obb: &OBB, sphere: &Sphere) -> bool {
 #[cfg(test)]
 mod tests {
     use super::obb_sphere;
-    use crate::collision_detection::shapes::{Sphere, OBB};
+    use crate::engine::shapes::{Sphere, OBB};
     use crate::math::{Real, Rotation, Transform, Vec3, ONE, P3, ZERO};
     #[test]
     fn obb_sphere_intersection() {

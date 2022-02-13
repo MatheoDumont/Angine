@@ -1,4 +1,4 @@
-use crate::collision_detection::shapes::{Plane, Sphere};
+use crate::engine::shapes::{Plane, Sphere};
 use crate::math::{Vec3, P3};
 
 pub fn plane_sphere(plane: &Plane, sphere: &Sphere) -> bool {
@@ -12,7 +12,7 @@ pub fn plane_sphere(plane: &Plane, sphere: &Sphere) -> bool {
 #[cfg(test)]
 mod tests {
     use super::plane_sphere;
-    use crate::collision_detection::shapes::{Plane, Sphere};
+    use crate::engine::shapes::{Plane, Sphere};
     use crate::math::{Real, Vec3, ONE, P3, ZERO};
     #[test]
     fn plane_sphere_intersection() {

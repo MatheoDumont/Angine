@@ -1,4 +1,4 @@
-use crate::collision_detection::shapes::Plane;
+use crate::engine::shapes::Plane;
 use crate::math::ONE;
 
 pub fn plane_plane(pl1: &Plane, pl2: &Plane) -> bool {
@@ -12,7 +12,7 @@ pub fn plane_plane(pl1: &Plane, pl2: &Plane) -> bool {
 #[cfg(test)]
 mod tests {
     use super::plane_plane;
-    use crate::collision_detection::shapes::Plane;
+    use crate::engine::shapes::Plane;
     use crate::math::{Vec3, ONE, P3, ZERO};
     #[test]
     fn plane_plane_intersection() {

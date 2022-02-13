@@ -1,4 +1,4 @@
-use crate::collision_detection::shapes::OBB;
+use crate::engine::shapes::OBB;
 use crate::math::{Vec3, P3};
 
 pub fn obb_obb(obb1: &OBB, obb2: &OBB) -> bool {
@@ -9,7 +9,7 @@ pub fn obb_obb(obb1: &OBB, obb2: &OBB) -> bool {
 #[cfg(test)]
 mod tests {
     use super::obb_obb;
-    use crate::collision_detection::shapes::OBB;
+    use crate::engine::shapes::OBB;
     use crate::math::{Real, Rotation, Transform, Vec3, ONE, P3, ZERO};
     #[test]
     fn obb_obb_intersection() {

@@ -1,4 +1,4 @@
-use crate::collision_detection::shapes::{Plane, OBB};
+use crate::engine::shapes::{Plane, OBB};
 use crate::math::{Vec3, ONE, P3, ZERO};
 
 pub fn obb_plane(obb: &OBB, plane: &Plane) -> bool {
@@ -15,7 +15,7 @@ pub fn obb_plane(obb: &OBB, plane: &Plane) -> bool {
 #[cfg(test)]
 mod tests {
     use super::obb_plane;
-    use crate::collision_detection::shapes::{Plane, OBB};
+    use crate::engine::shapes::{Plane, OBB};
     use crate::math::{Real, Rotation, Transform, Vec3, ONE, P3, ZERO};
     #[test]
     fn obb_plane_intersection() {

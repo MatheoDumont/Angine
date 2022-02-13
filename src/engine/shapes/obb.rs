@@ -1,5 +1,5 @@
 use super::{Shape, ShapeType};
-use crate::math::{helper, Real, Transform, Vec3, P3};
+use crate::math::{helper, Mat3, Real, Transform, Vec3, P3};
 
 /**
  * Oriented Bounding Box
@@ -7,6 +7,17 @@ use crate::math::{helper, Real, Transform, Vec3, P3};
 pub struct OBB {
     pub half_side: Vec3,
     pub transform: Transform,
+}
+
+impl Shape for OBB {
+    fn inertia_matrix(&self, mass: Real) -> Mat3 {
+        panic!("inertia matrix for Plane not implemented");
+    }
+    fn shape_type(&self) -> ShapeType {
+        ShapeType::OBB
+    }
+    // fn transform_ref(&self) -> &Transform;
+    // fn set_transform(&self, t: Transform);
 }
 
 impl OBB {

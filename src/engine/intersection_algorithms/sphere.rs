@@ -1,4 +1,4 @@
-use crate::collision_detection::shapes::Sphere;
+use crate::engine::shapes::Sphere;
 use crate::math::{Real, P3};
 
 pub fn sphere_sphere(sphere_a: &Sphere, sphere_b: &Sphere) -> bool {

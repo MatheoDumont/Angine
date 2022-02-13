@@ -20,7 +20,7 @@ impl Sphere {
 }
 
 impl Shape for Sphere {
-    fn inertia_matrix(&self) -> Vec3 {
+    fn inertia_matrix(&self, mass: Real) -> Mat3 {
         // pour l'instant
         panic!("inertia matrix for Sphere not implemented");
     }
@@ -28,6 +28,4 @@ impl Shape for Sphere {
     fn shape_type(&self) -> ShapeType {
         ShapeType::Sphere
     }
-
-  
 }
