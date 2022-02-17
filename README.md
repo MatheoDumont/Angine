@@ -1,4 +1,4 @@
-# Engine
+# Angine
 Implementation of a Physics engine in Rust with basic physics simulation and collision.
 
 ## Documentation 
