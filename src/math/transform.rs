@@ -101,6 +101,10 @@ impl Transform {
     pub fn transform_vec(&self, vec: &Vec3) -> Vec3 {
         &self.rotation * vec
     }
+
+    pub fn position(&self) -> P3 {
+        P3::from(self.translation)
+    }
 }
 
 impl Mul for Transform {

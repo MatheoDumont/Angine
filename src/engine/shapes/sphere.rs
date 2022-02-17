@@ -14,8 +14,8 @@ impl Sphere {
         }
     }
 
-    pub fn closest_point(&self, p: P3) -> P3 {
-        &self.position + (p - self.position).normalized() * self.radius
+    pub fn closest_point(&self, p: &P3) -> P3 {
+        &self.position + (p - &self.position).normalized() * self.radius
     }
 }
 

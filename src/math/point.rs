@@ -63,7 +63,7 @@ impl Sub for P3 {
 impl Sub for &P3 {
     type Output = Vec3;
 
-    fn sub(self, sub: Self) -> Self::Output {
+    fn sub(self, sub: &P3) -> Self::Output {
         Vec3::new(
             self.values[0] - sub.values[0],
             self.values[1] - sub.values[1],

@@ -19,3 +19,16 @@ pub fn sign(x: Real) -> Real {
         -ONE
     }
 }
+
+pub fn closest_to_p(p: &P3, pts: &Vec<P3>) -> usize {
+    let mut closest_vertex = 0;
+    let mut d = (&pts[closest_vertex] - p).norm_squared();
+    for i in 1..pts.len() {
+        let dd = (p - &pts[i]).norm_squared();
+        if d > dd {
+            d = dd;
+            closest_vertex = i;
+        }
+    }
+    closest_vertex
+}

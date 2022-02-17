@@ -2,17 +2,11 @@ pub mod collision_object;
 
 pub use collision_object::CollisionObject;
 
+use crate::engine::contact_algorithms::ContactManifold;
 use crate::engine::intersection_algorithms::intersection_wrapper::get_intersection_fn_by_collisiontypes;
 use crate::math::{Vec3, P3};
 
 use std::vec::Vec;
-
-pub struct ContactManifold {
-    pub point: P3,
-    pub normal_a_to_b: Vec3,
-    pub o1: Box<CollisionObject>,
-    pub o2: Box<CollisionObject>,
-}
 
 pub struct CollisionWorld {
     collision_objects: Vec<Box<CollisionObject>>,
@@ -45,8 +39,8 @@ impl CollisionWorld {
                 let shape_j = &obj_j.shape;
 
                 if let Some(algo) = get_intersection_fn_by_collisiontypes(shape_i, shape_j) {
-                    if algo(shape_i, shape_j) {
-                        // self.contact_manifolds.push(value: T)
+                    if let Some(contact_manifold) = algo(shape_i, shape_j) {
+                        self.contact_manifolds.push(contact_manifold);
                     }
                 }
             }

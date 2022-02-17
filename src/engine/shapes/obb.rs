@@ -1,5 +1,5 @@
 use super::{Shape, ShapeType};
-use crate::math::{helper, Mat3, Real, Transform, Vec3, P3};
+use crate::math::{helper, Mat3, Real, Transform, Vec3, P3, ZERO};
 
 /**
  * Oriented Bounding Box
@@ -53,9 +53,9 @@ impl OBB {
         let p_to_obb = p - &P3::from(self.transform.translation);
         for i in 0..self.transform.rotation.size().0 {
             let axis = self.transform.rotation.row(i);
-            let scalar = &axis.dot(&p_to_obb);
+            let scalar = axis.dot(&p_to_obb);
 
-            if scalar > &self.half_side[0] || scalar < &-self.half_side[0] {
+            if scalar > self.half_side[0] || scalar < -self.half_side[0] {
                 return false;
             }
         }
@@ -64,7 +64,7 @@ impl OBB {
     }
 
     /**
-     * Closest point on the contour of the OBB to p
+     * Closest point on the contour of the OBB to p, or inside if p is inside
      */
     pub fn closest_point(&self, p: &P3) -> P3 {
         let mut new_p = P3::from(&self.transform.translation);
@@ -77,6 +77,48 @@ impl OBB {
         }
 
         new_p
+    }
+
+    pub fn closest_point_on_contour(&self, p: &P3) -> P3 {
+        let mut new_p = P3::from(&self.transform.translation);
+        let p_to_obb = p - &new_p;
+        let mut scalars = [ZERO; 3];
+        let mut i_max = 0;
+        scalars[i_max] = self.transform.rotation.row(0).dot(&p_to_obb);
+
+        for i in 1..self.transform.rotation.size().0 {
+            let axis = self.transform.rotation.row(i);
+            scalars[i] = axis.dot(&p_to_obb);
+
+            if scalars[i].abs() > scalars[i_max].abs() {
+                i_max = i;
+            }
+        }
+        let mut max = self.half_side[i_max];
+        if scalars[i_max] < ZERO {
+            max = -max;
+        }
+        new_p
+            + self.transform.rotation.row(i_max) * max
+            + self.transform.rotation.row((i_max + 1) % 3) * scalars[(i_max + 1) % 3]
+            + self.transform.rotation.row((i_max + 2) % 3) * scalars[(i_max + 2) % 3]
+    }
+
+    pub fn vertices(&self) -> Vec<P3> {
+        let xl = self.half_side.x;
+        let yl = self.half_side.y;
+        let zl = self.half_side.z;
+
+        vec![
+            self.transform.transform(&P3::new(xl, yl, zl)), // far top right
+            self.transform.transform(&P3::new(-xl, yl, zl)), // far top left
+            self.transform.transform(&P3::new(-xl, -yl, zl)), // far bot left
+            self.transform.transform(&P3::new(xl, -yl, zl)), // far bot right
+            self.transform.transform(&P3::new(xl, yl, -zl)), // near top right
+            self.transform.transform(&P3::new(-xl, yl, -zl)), // near top left
+            self.transform.transform(&P3::new(-xl, -yl, -zl)), // near bot left
+            self.transform.transform(&P3::new(xl, -yl, -zl)), // near bot right
+        ]
     }
 }
 
@@ -145,7 +187,7 @@ mod tests {
         // not rotated
         {
             let obb = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-            let p = obb.closest_point(&P3::new(1.5, 1.5, 0.0));
+            let p = obb.closest_point(&P3::new(1.5, 1.5, ZERO));
             assert_eq!(p[0], ONE);
             assert_eq!(p[1], ONE);
             assert_eq!(p[2], ZERO);
@@ -158,7 +200,7 @@ mod tests {
                     Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
                 );
 
-                let p = obb.closest_point(&P3::new(0.0, 2.0, 0.0));
+                let p = obb.closest_point(&P3::new(ZERO, 2.0, ZERO));
 
                 assert_eq!(p[0], ZERO);
                 assert_eq!(p[1], (2 as f32).sqrt());
@@ -170,12 +212,37 @@ mod tests {
                     Vec3::new(ONE, ONE, 2.0),
                     Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
                 );
-                let p = obb.closest_point(&P3::new(0.0, 2.0, 2.0));
+                let p = obb.closest_point(&P3::new(ZERO, 2.0, 2.0));
 
                 assert_eq!(p[0], ZERO);
                 assert_eq!(p[1], (2 as f32).sqrt());
                 assert_eq!(p[2], 2.0);
             }
+        }
+    }
+    #[test]
+    fn OBB_closest_point_on_contour() {
+        {
+            let obb = OBB::new(Vec3::new(2.0, ONE, ONE), Transform::identity());
+            let p = obb.closest_point_on_contour(&P3::new(ONE, -ZERO, ZERO));
+            assert_eq!(p[0], 2.0);
+            assert_eq!(p[1], ZERO);
+            assert_eq!(p[2], ZERO);
+        }
+        {
+            let obb = OBB::new(
+                Vec3::ones(),
+                Transform::new(
+                    Vec3::ones(),
+                    Rotation::Z(std::f32::consts::FRAC_PI_4),
+                    Vec3::zero(),
+                ),
+            );
+            let p = obb.closest_point_on_contour(&P3::new(ONE, ZERO, ZERO));
+            println!("{:?}", p);
+            // assert_eq!(p[0], 2.0);
+            // assert_eq!(p[1], ZERO);
+            // assert_eq!(p[2], ZERO);
         }
     }
 }
