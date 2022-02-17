@@ -9,6 +9,7 @@ A good take of intersection and some math comes from [*The game physic cookbook*
 ### Method of Separating Axis 
 - [Blog explanation](https://dyn4j.org/2010/01/sat/#sat-mtv)
 - [Paper explanation, 2D & 3D exemple + computation of collision time using the Method](https://www.geometrictools.com/Documentation/MethodOfSeparatingAxes.pdf) or in the doc folder [here](doc/MethodOfSeparatingAxes.pdf)
+- Th way of implementing the SAT follow this [post](https://dyn4j.org/2010/01/sat/#sat-projshape)
 
 ### Collisions
 Simplifiés de telle sorte que on intègre la position au temps t+1 comme étant  :
