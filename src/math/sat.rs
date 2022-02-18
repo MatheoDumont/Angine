@@ -31,7 +31,7 @@ impl SeparatingAxisMethod {
             let proj1 = project(axis, &shape1_vertices);
             let proj2 = project(axis, &shape2_vertices);
 
-            if let Some(x) = overlap(&proj1, &proj2) {
+            if let Some(x) = overlapping_or_touching(&proj1, &proj2) {
                 if x < minimum_translation {
                     minimum_translation = x;
                     minimum_axis = axis;
@@ -45,7 +45,7 @@ impl SeparatingAxisMethod {
             let proj1 = project(axis, &shape1_vertices);
             let proj2 = project(axis, &shape2_vertices);
 
-            if let Some(x) = overlap(&proj1, &proj2) {
+            if let Some(x) = overlapping_or_touching(&proj1, &proj2) {
                 if x < minimum_translation {
                     minimum_translation = x;
                     minimum_axis = axis;
@@ -78,8 +78,8 @@ fn project(axis: &Vec3, vertices: &Vec<P3>) -> Projection {
     Projection { min: min, max: max }
 }
 
-fn overlap(p1: &Projection, p2: &Projection) -> Option<Real> {
-    if p1.max > p2.min && p2.max > p1.min {
+fn overlapping_or_touching(p1: &Projection, p2: &Projection) -> Option<Real> {
+    if p1.max >= p2.min && p2.max >= p1.min {
         if p1.max > p2.max {
             Some(p2.max - p1.min)
         } else {
@@ -93,9 +93,11 @@ fn overlap(p1: &Projection, p2: &Projection) -> Option<Real> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::math::{Transform, ONE, ZERO};
+    use assert_approx_eq::assert_approx_eq;
 
     #[test]
-    fn test_overlap() {
+    fn test_overlapping_or_touching() {
         {
             let p1 = Projection {
                 min: 1 as Real,
@@ -106,7 +108,7 @@ mod test {
                 max: 4 as Real,
             };
 
-            assert_eq!(overlap(&p1, &p2), Some(0.5));
+            assert_eq!(overlapping_or_touching(&p1, &p2), Some(0.5));
         }
 
         {
@@ -119,7 +121,7 @@ mod test {
                 max: 4 as Real,
             };
 
-            assert_eq!(overlap(&p2, &p1), Some(0.5));
+            assert_eq!(overlapping_or_touching(&p2, &p1), Some(0.5));
         }
 
         {
@@ -132,7 +134,150 @@ mod test {
                 max: 7 as Real,
             };
 
-            assert_eq!(overlap(&p2, &p1), Some(0.5));
+            assert_eq!(overlapping_or_touching(&p2, &p1), Some(0.5));
+        }
+        // touching but not overlapping
+        {
+            let p1 = Projection {
+                min: 1 as Real,
+                max: 3 as Real,
+            };
+            let p2 = Projection {
+                min: 3 as Real,
+                max: 7 as Real,
+            };
+
+            assert_eq!(overlapping_or_touching(&p2, &p1), Some(ZERO));
+        }
+
+        // touching but not overlapping
+        {
+            let p1 = Projection {
+                min: 1 as Real,
+                max: 3 as Real,
+            };
+            let p2 = Projection {
+                min: 3.1 as Real,
+                max: 7 as Real,
+            };
+
+            assert_eq!(overlapping_or_touching(&p2, &p1), None);
+        }
+    }
+    #[test]
+    fn test_project() {
+        let points = vec![
+            P3::new(ONE, ONE, ZERO),
+            P3::new(2 as Real, 2 as Real, ZERO),
+            P3::new(3 as Real, 3 as Real, ZERO),
+        ];
+
+        let proj = project(&Vec3::right(), &points);
+        assert_eq!(proj.min, ONE);
+        assert_eq!(proj.max, 3 as Real);
+    }
+
+    struct Square {
+        transform: Transform,
+        halfsize: (Real, Real),
+    }
+
+    impl Mesh for Square {
+        fn vertices(&self) -> Vec<P3> {
+            let position = self.transform.position();
+            vec![
+                P3::new(
+                    position[0] - self.halfsize.0,
+                    position[1] - self.halfsize.1,
+                    ZERO,
+                ),
+                P3::new(
+                    position[0] + self.halfsize.0,
+                    position[1] - self.halfsize.1,
+                    ZERO,
+                ),
+                P3::new(
+                    position[0] + self.halfsize.0,
+                    position[1] + self.halfsize.1,
+                    ZERO,
+                ),
+                P3::new(
+                    position[0] - self.halfsize.0,
+                    position[1] + self.halfsize.1,
+                    ZERO,
+                ),
+            ]
+        }
+    }
+
+    impl SAT for Square {
+        fn separating_axis(&self) -> Vec<Vec3> {
+            vec![
+                self.transform.rotation.row(0),
+                self.transform.rotation.row(1),
+            ]
+        }
+    }
+    #[test]
+    fn test_separating_axis() {
+        // sat touching
+        {
+            let square1 = Square {
+                transform: Transform::identity(),
+                halfsize: (0.5, 0.5),
+            };
+            let square2 = Square {
+                transform: Transform::translation(Vec3::right()),
+                halfsize: (0.5, 0.5),
+            };
+
+            let sat = SeparatingAxisMethod::compute(&square1, &square2);
+            assert!(sat.is_some());
+            let sat_unwrapped = sat.unwrap();
+
+            assert_eq!(sat_unwrapped.minimum_translation, ZERO);
+
+            let axis = sat_unwrapped.minimum_axis;
+            assert_eq!(axis.x, ONE);
+            assert_eq!(axis.y, ZERO);
+            assert_eq!(axis.z, ZERO);
+        }
+        // sat overlapping
+        {
+            let square1 = Square {
+                transform: Transform::identity(),
+                halfsize: (0.5, 0.5),
+            };
+            let square2 = Square {
+                transform: Transform::translation(Vec3::right()),
+                halfsize: (0.6, 0.5),
+            };
+
+            let sat = SeparatingAxisMethod::compute(&square1, &square2);
+            assert!(sat.is_some());
+            let sat_unwrapped = sat.unwrap();
+
+            assert_approx_eq!(sat_unwrapped.minimum_translation, 0.1, 1.0e-6);
+
+            let axis = sat_unwrapped.minimum_axis;
+            assert_eq!(axis.x, ONE);
+            assert_eq!(axis.y, ZERO);
+            assert_eq!(axis.z, ZERO);
+        }
+
+        // no projection on all axis, no intersection
+
+        {
+            let square1 = Square {
+                transform: Transform::identity(),
+                halfsize: (0.5, 0.5),
+            };
+            let square2 = Square {
+                transform: Transform::translation(Vec3::new(2 as Real, ZERO, ZERO)),
+                halfsize: (0.5, 0.5),
+            };
+            let sat = SeparatingAxisMethod::compute(&square1, &square2);
+            assert!(sat.is_none());
         }
     }
 }
