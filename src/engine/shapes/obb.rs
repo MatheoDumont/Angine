@@ -1,6 +1,5 @@
 use super::{Shape, ShapeType};
-use crate::math::{helper, Mat3, Real, Transform, Vec3, P3, ZERO};
-
+use crate::math::{helper, sat::SAT, traits::Mesh, Mat3, Real, Transform, Vec3, P3, ZERO};
 /**
  * Oriented Bounding Box
  */
@@ -122,6 +121,21 @@ impl OBB {
     }
 }
 
+impl Mesh for OBB {
+    fn vertices(&self) -> Vec<P3> {
+        self.vertices()
+    }
+}
+
+impl SAT for OBB {
+    fn separating_axis(&self) -> Vec<Vec3> {
+        vec![
+            self.transform.rotation.row(0),
+            self.transform.rotation.row(1),
+            self.transform.rotation.row(2),
+        ]
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::OBB;

@@ -7,6 +7,22 @@ pub trait SAT {
     fn separating_axis(&self) -> Vec<Vec3>;
 }
 
+/**
+ * Compute the cross product between each axis of both shapes.
+ */
+pub fn cross_separating_axis(axis1: &Vec<Vec3>, axis2: &Vec<Vec3>) -> Vec<Vec3> {
+    let mut v = Vec::with_capacity(axis1.len() * axis2.len());
+
+    for shape_axis1 in axis1 {
+        for shape_axis2 in axis2 {
+            let cross = shape_axis1.cross(shape_axis2);
+            cross.normalize();
+            v.push(cross);
+        }
+    }
+    v
+}
+
 pub struct Projection {
     min: Real,
     max: Real,
@@ -18,16 +34,16 @@ pub struct SeparatingAxisMethod {
 }
 
 impl SeparatingAxisMethod {
-    pub fn compute<T: SAT + Mesh>(shape1: &T, shape2: &T) -> Option<SeparatingAxisMethod> {
-        let axis_shape1 = shape1.separating_axis();
-        let axis_shape2 = shape2.separating_axis();
-        let shape1_vertices = shape1.vertices();
-        let shape2_vertices = shape2.vertices();
-
+    pub fn compute_2D(
+        shape1_vertices: &Vec<P3>,
+        axis_shape1: &Vec<Vec3>,
+        shape2_vertices: &Vec<P3>,
+        axis_shape2: &Vec<Vec3>,
+    ) -> Option<SeparatingAxisMethod> {
         let mut minimum_translation = f32::MAX;
         let mut minimum_axis = &Vec3::zero();
 
-        for axis in &axis_shape1 {
+        for axis in axis_shape1 {
             let proj1 = project(axis, &shape1_vertices);
             let proj2 = project(axis, &shape2_vertices);
 
@@ -41,7 +57,65 @@ impl SeparatingAxisMethod {
             }
         }
 
-        for axis in &axis_shape2 {
+        for axis in axis_shape2 {
+            let proj1 = project(axis, &shape1_vertices);
+            let proj2 = project(axis, &shape2_vertices);
+
+            if let Some(x) = overlapping_or_touching(&proj1, &proj2) {
+                if x < minimum_translation {
+                    minimum_translation = x;
+                    minimum_axis = axis;
+                }
+            } else {
+                return None;
+            }
+        }
+
+        Some(SeparatingAxisMethod {
+            minimum_translation: minimum_translation,
+            minimum_axis: minimum_axis.clone(),
+        })
+    }
+
+    pub fn compute_3D(
+        shape1_vertices: &Vec<P3>,
+        axis_shape1: &Vec<Vec3>,
+        shape2_vertices: &Vec<P3>,
+        axis_shape2: &Vec<Vec3>,
+    ) -> Option<SeparatingAxisMethod> {
+        let mut minimum_translation = f32::MAX;
+        let mut minimum_axis = &Vec3::zero();
+
+        for axis in axis_shape1 {
+            let proj1 = project(axis, &shape1_vertices);
+            let proj2 = project(axis, &shape2_vertices);
+
+            if let Some(x) = overlapping_or_touching(&proj1, &proj2) {
+                if x < minimum_translation {
+                    minimum_translation = x;
+                    minimum_axis = axis;
+                }
+            } else {
+                return None;
+            }
+        }
+
+        for axis in axis_shape2 {
+            let proj1 = project(axis, &shape1_vertices);
+            let proj2 = project(axis, &shape2_vertices);
+
+            if let Some(x) = overlapping_or_touching(&proj1, &proj2) {
+                if x < minimum_translation {
+                    minimum_translation = x;
+                    minimum_axis = axis;
+                }
+            } else {
+                return None;
+            }
+        }
+
+        let cross_axis = cross_separating_axis(axis_shape1, axis_shape2);
+        for axis in &cross_axis {
             let proj1 = project(axis, &shape1_vertices);
             let proj2 = project(axis, &shape2_vertices);
 
