@@ -1,7 +1,7 @@
 use super::{Real, ONE, P3, ZERO};
 use std::{
     convert::From,
-    ops::{Add, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub},
+    ops::{Add, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub},
 };
 
 #[derive(Copy, Clone, Debug)]
@@ -19,6 +19,23 @@ impl From<&P3> for Vec3 {
 impl From<P3> for Vec3 {
     fn from(p: P3) -> Self {
         Vec3::new(p[0], p[1], p[2])
+    }
+}
+
+impl Neg for Vec3 {
+    type Output = Vec3;
+
+    fn neg(self) -> Self::Output {
+        Vec3::new(-self.x, -self.y, -self.z)
+    }
+}
+
+
+impl Neg for &Vec3 {
+    type Output = Vec3;
+
+    fn neg(self) -> Self::Output {
+        Vec3::new(-self.x, -self.y, -self.z)
     }
 }
 

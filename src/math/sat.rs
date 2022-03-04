@@ -1,7 +1,7 @@
 /**
  * Implementation of the Separating Axis Theorem
  */
-use super::{traits::Mesh, Real, Vec3, P3};
+use super::{geometry_traits::*, Real, Vec3, P3, ZERO};
 
 pub trait SAT {
     fn separating_axis(&self) -> Vec<Vec3>;
@@ -15,9 +15,12 @@ pub fn cross_separating_axis(axis1: &Vec<Vec3>, axis2: &Vec<Vec3>) -> Vec<Vec3> 
 
     for shape_axis1 in axis1 {
         for shape_axis2 in axis2 {
-            let cross = shape_axis1.cross(shape_axis2);
-            cross.normalize();
-            v.push(cross);
+            let mut cross = shape_axis1.cross(shape_axis2);
+            let norm = cross.norm();
+            if norm != ZERO {
+                cross /= norm;
+                v.push(cross);
+            }
         }
     }
     v
@@ -167,7 +170,8 @@ fn overlapping_or_touching(p1: &Projection, p2: &Projection) -> Option<Real> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::math::{Transform, ONE, ZERO};
+    use crate::engine::shapes::OBB;
+    use crate::math::{helper, Rotation, Transform, ONE, ZERO};
     use assert_approx_eq::assert_approx_eq;
 
     #[test]
@@ -224,7 +228,7 @@ mod test {
             assert_eq!(overlapping_or_touching(&p2, &p1), Some(ZERO));
         }
 
-        // touching but not overlapping
+        // nothing
         {
             let p1 = Projection {
                 min: 1 as Real,
@@ -256,7 +260,7 @@ mod test {
         halfsize: (Real, Real),
     }
 
-    impl Mesh for Square {
+    impl Square {
         fn vertices(&self) -> Vec<P3> {
             let position = self.transform.position();
             vec![
@@ -293,7 +297,7 @@ mod test {
         }
     }
     #[test]
-    fn test_separating_axis() {
+    fn separating_axis_2d() {
         // sat touching
         {
             let square1 = Square {
@@ -305,7 +309,12 @@ mod test {
                 halfsize: (0.5, 0.5),
             };
 
-            let sat = SeparatingAxisMethod::compute(&square1, &square2);
+            let sat = SeparatingAxisMethod::compute_2D(
+                &square1.vertices(),
+                &square1.separating_axis(),
+                &square2.vertices(),
+                &square2.separating_axis(),
+            );
             assert!(sat.is_some());
             let sat_unwrapped = sat.unwrap();
 
@@ -327,7 +336,12 @@ mod test {
                 halfsize: (0.6, 0.5),
             };
 
-            let sat = SeparatingAxisMethod::compute(&square1, &square2);
+            let sat = SeparatingAxisMethod::compute_2D(
+                &square1.vertices(),
+                &square1.separating_axis(),
+                &square2.vertices(),
+                &square2.separating_axis(),
+            );
             assert!(sat.is_some());
             let sat_unwrapped = sat.unwrap();
 
@@ -350,8 +364,158 @@ mod test {
                 transform: Transform::translation(Vec3::new(2 as Real, ZERO, ZERO)),
                 halfsize: (0.5, 0.5),
             };
-            let sat = SeparatingAxisMethod::compute(&square1, &square2);
+            let sat = SeparatingAxisMethod::compute_2D(
+                &square1.vertices(),
+                &square1.separating_axis(),
+                &square2.vertices(),
+                &square2.separating_axis(),
+            );
             assert!(sat.is_none());
+        }
+    }
+
+    /**
+     * Same tests as in computing intersection between two OBB
+     */
+    #[test]
+    fn separating_axis_3d() {
+        // no intersection
+        {
+            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
+            let obb2 = OBB::new(
+                Vec3::new(ONE, ONE, ONE),
+                Transform::translation(Vec3::right() * (3 as Real)),
+            );
+
+            let r = SeparatingAxisMethod::compute_3D(
+                &obb1.vertices(),
+                &obb1.separating_axis(),
+                &obb2.vertices(),
+                &obb2.separating_axis(),
+            );
+
+            assert!(r.is_none());
+        }
+
+        // oriented
+        {
+            let obb1 = OBB::new(
+                Vec3::new(ONE, ONE, ONE),
+                Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
+            );
+            let obb2 = OBB::new(
+                Vec3::new(ONE, ONE, ONE),
+                Transform::translation(Vec3::right()),
+            );
+            let r = SeparatingAxisMethod::compute_3D(
+                &obb1.vertices(),
+                &obb1.separating_axis(),
+                &obb2.vertices(),
+                &obb2.separating_axis(),
+            );
+
+            assert!(r.is_some());
+        }
+
+        // vertex touching
+        {
+            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
+            let obb2 = OBB::new(
+                Vec3::new(ONE, ONE, ONE),
+                Transform::translation(Vec3::new(ONE, ONE, ONE)),
+            );
+            let r = SeparatingAxisMethod::compute_3D(
+                &obb1.vertices(),
+                &obb1.separating_axis(),
+                &obb2.vertices(),
+                &obb2.separating_axis(),
+            );
+
+            assert!(r.is_some());
+        }
+
+        // edge touching
+        {
+            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
+            let obb2 = OBB::new(
+                Vec3::new(ONE, ONE, ONE),
+                Transform::translation(Vec3::new(ONE, ONE, ZERO)),
+            );
+            let r = SeparatingAxisMethod::compute_3D(
+                &obb1.vertices(),
+                &obb1.separating_axis(),
+                &obb2.vertices(),
+                &obb2.separating_axis(),
+            );
+
+            assert!(r.is_some());
+        }
+
+        // face touching
+        {
+            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
+            let obb2 = OBB::new(
+                Vec3::new(ONE, ONE, ONE),
+                Transform::translation(Vec3::right() * (2 as Real)),
+            );
+            let r = SeparatingAxisMethod::compute_3D(
+                &obb1.vertices(),
+                &obb1.separating_axis(),
+                &obb2.vertices(),
+                &obb2.separating_axis(),
+            );
+
+            assert!(r.is_some());
+        }
+
+        // intersection between an edge of A and an edge of B without either of the vertices of A or B penetrating the other shape (A/B)
+        {
+            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
+            let obb2 = OBB::new(
+                Vec3::new(ONE, ONE, ONE),
+                Transform::new(
+                    Vec3::ones(),
+                    Rotation::composed(
+                        helper::angle_2_rad(30 as Real),
+                        helper::angle_2_rad(-35 as Real),
+                        helper::angle_2_rad(-45 as Real),
+                    ),
+                    Vec3::new(2.1 as Real, 1.7 as Real, ZERO),
+                ),
+            );
+            let r = SeparatingAxisMethod::compute_3D(
+                &obb1.vertices(),
+                &obb1.separating_axis(),
+                &obb2.vertices(),
+                &obb2.separating_axis(),
+            );
+
+            assert!(r.is_some());
+        }
+
+        // almost the same but no intersection
+        {
+            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
+            let obb2 = OBB::new(
+                Vec3::new(ONE, ONE, ONE),
+                Transform::new(
+                    Vec3::ones(),
+                    Rotation::composed(
+                        helper::angle_2_rad(30 as Real),
+                        helper::angle_2_rad(-35 as Real),
+                        helper::angle_2_rad(-45 as Real),
+                    ),
+                    Vec3::new(2.1 as Real, 2.5 as Real, ZERO),
+                ),
+            );
+            let r = SeparatingAxisMethod::compute_3D(
+                &obb1.vertices(),
+                &obb1.separating_axis(),
+                &obb2.vertices(),
+                &obb2.separating_axis(),
+            );
+
+            assert!(r.is_none());
         }
     }
 }

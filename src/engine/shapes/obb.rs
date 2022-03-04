@@ -1,5 +1,7 @@
 use super::{Shape, ShapeType};
-use crate::math::{helper, sat::SAT, traits::Mesh, Mat3, Real, Transform, Vec3, P3, ZERO};
+use crate::math::{
+    geometry_traits::*, helper, sat::SAT, Mat3, Real, Transform, Vec3, P3, TWO, ZERO,
+};
 /**
  * Oriented Bounding Box
  */
@@ -102,8 +104,15 @@ impl OBB {
             + self.transform.rotation.row((i_max + 1) % 3) * scalars[(i_max + 1) % 3]
             + self.transform.rotation.row((i_max + 2) % 3) * scalars[(i_max + 2) % 3]
     }
+}
 
-    pub fn vertices(&self) -> Vec<P3> {
+impl Polyhedron for OBB {
+    // number of vertices, edges, faces
+    fn sizes(&self) -> (usize, usize, usize) {
+        (8, 12, 6)
+    }
+
+    fn vertices(&self) -> Vec<P3> {
         let xl = self.half_side.x;
         let yl = self.half_side.y;
         let zl = self.half_side.z;
@@ -119,11 +128,72 @@ impl OBB {
             self.transform.transform(&P3::new(xl, -yl, -zl)), // near bot right
         ]
     }
-}
+    // an edge is as the indices of the two points, from vertices()
+    fn edges(&self) -> Vec<EdgeIndex> {
+        // from top to bottom
+        // in trigonometric order
+        vec![
+            // top horizontal edges
+            EdgeIndex { vi1: 0, vi2: 1 },
+            EdgeIndex { vi1: 1, vi2: 5 },
+            EdgeIndex { vi1: 5, vi2: 4 },
+            EdgeIndex { vi1: 4, vi2: 0 },
+            // mid vertical edges
+            EdgeIndex { vi1: 0, vi2: 3 },
+            EdgeIndex { vi1: 1, vi2: 2 },
+            EdgeIndex { vi1: 5, vi2: 6 },
+            EdgeIndex { vi1: 4, vi2: 7 },
+            // bottom horizontal edges
+            EdgeIndex { vi1: 3, vi2: 2 },
+            EdgeIndex { vi1: 2, vi2: 6 },
+            EdgeIndex { vi1: 6, vi2: 7 },
+            EdgeIndex { vi1: 7, vi2: 3 },
+        ]
+    }
+    // a face is described as a Vec of vertex index, the order is trigonometric
+    fn faces(&self) -> Vec<FaceIndex> {
+        // by axis
+        // in trigonometric order
+        vec![
+            // +X
+            FaceIndex {
+                v_i: vec![4, 7, 3, 0],
+            },
+            // -X
+            FaceIndex {
+                v_i: vec![1, 2, 6, 5],
+            },
+            // +Y
+            FaceIndex {
+                v_i: vec![0, 1, 5, 4],
+            },
+            // -Y
+            FaceIndex {
+                v_i: vec![3, 2, 6, 7],
+            },
+            // +Z
+            FaceIndex {
+                v_i: vec![0, 3, 2, 1],
+            },
+            // -Z
+            FaceIndex {
+                v_i: vec![5, 6, 7, 4],
+            },
+        ]
+    }
 
-impl Mesh for OBB {
-    fn vertices(&self) -> Vec<P3> {
-        self.vertices()
+    // face_index is an index of the Vec<Faces> returned by faces()
+    fn face_normal(&self, face: usize) -> Vec3 {
+        let modulo = face % 2;
+        let n = self.transform.rotation.row((face - modulo) / 2);
+        n - n * TWO * (modulo as Real) // if face is odd, then the normal is flipped, otherwise nothing
+
+        // understandable version
+        // if face % 2 == 0 {
+        //     self.transform.rotation.row(face / 2)
+        // } else {
+        //     -self.transform.rotation.row((face - 1) / 2)
+        // }
     }
 }
 
@@ -136,6 +206,7 @@ impl SAT for OBB {
         ]
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::OBB;

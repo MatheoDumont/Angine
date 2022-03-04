@@ -32,3 +32,12 @@ pub fn closest_to_p(p: &P3, pts: &Vec<P3>) -> usize {
     }
     closest_vertex
 }
+
+const RAD2ANGLECONST: Real = std::f32::consts::PI / (180 as Real);
+
+pub fn angle_2_rad(angle: Real) -> Real {
+    angle * RAD2ANGLECONST
+}
+pub fn rad_2_angle(rad: Real) -> Real {
+    rad / RAD2ANGLECONST
+}
