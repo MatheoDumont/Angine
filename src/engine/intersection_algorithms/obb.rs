@@ -1,5 +1,7 @@
 use crate::engine::shapes::OBB;
-use crate::math::{sat, sat::SAT, Vec3, P3};
+use crate::geometry::{sat, sat::SAT};
+use crate::math::{Vec3, P3};
+
 
 pub fn obb_obb(obb1: &OBB, obb2: &OBB) -> bool {
     // let p = obb1.closest_point(&P3::from(obb2.transform.translation));

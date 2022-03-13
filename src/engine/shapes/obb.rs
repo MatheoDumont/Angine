@@ -1,13 +1,15 @@
 use super::{Shape, ShapeType};
-use crate::math::{
-    geometry_traits::*, helper, sat::SAT, Mat3, Real, Transform, Vec3, P3, TWO, ZERO,
-};
+use crate::geometry::{geometry_traits::*, sat::SAT};
+use crate::math::{helper, Mat3, Real, Transform, Vec3, P3, TWO, ZERO};
 /**
  * Oriented Bounding Box
  */
 pub struct OBB {
     pub half_side: Vec3,
     pub transform: Transform,
+    pub vertices: Vec<P3>,
+    pub edges: Vec<EdgeIndex>,
+    pub faces: Vec<FaceIndex>,
 }
 
 impl Shape for OBB {
@@ -17,15 +19,74 @@ impl Shape for OBB {
     fn shape_type(&self) -> ShapeType {
         ShapeType::OBB
     }
-    // fn transform_ref(&self) -> &Transform;
-    // fn set_transform(&self, t: Transform);
 }
 
 impl OBB {
-    pub fn new(half_side: Vec3, t: Transform) -> OBB {
+    pub fn new(half_side: Vec3, transform: Transform) -> OBB {
+        let xl = half_side.x;
+        let yl = half_side.y;
+        let zl = half_side.z;
+
         OBB {
-            half_side: half_side,
-            transform: t,
+            half_side,
+            transform,
+            vertices: vec![
+                P3::new(xl, yl, zl),    // far top right
+                P3::new(-xl, yl, zl),   // far top left
+                P3::new(-xl, -yl, zl),  // far bot left
+                P3::new(xl, -yl, zl),   // far bot right
+                P3::new(xl, yl, -zl),   // near top right
+                P3::new(-xl, yl, -zl),  // near top left
+                P3::new(-xl, -yl, -zl), // near bot left
+                P3::new(xl, -yl, -zl),  // near bot right
+            ],
+            // from top to bottom
+            // in trigonometric order
+            edges: vec![
+                // top horizontal edges
+                EdgeIndex { vi1: 0, vi2: 1 },
+                EdgeIndex { vi1: 1, vi2: 5 },
+                EdgeIndex { vi1: 5, vi2: 4 },
+                EdgeIndex { vi1: 4, vi2: 0 },
+                // mid vertical edges
+                EdgeIndex { vi1: 0, vi2: 3 },
+                EdgeIndex { vi1: 1, vi2: 2 },
+                EdgeIndex { vi1: 5, vi2: 6 },
+                EdgeIndex { vi1: 4, vi2: 7 },
+                // bottom horizontal edges
+                EdgeIndex { vi1: 3, vi2: 2 },
+                EdgeIndex { vi1: 2, vi2: 6 },
+                EdgeIndex { vi1: 6, vi2: 7 },
+                EdgeIndex { vi1: 7, vi2: 3 },
+            ],
+            // by axis
+            // in trigonometric order
+            faces: vec![
+                // +X
+                FaceIndex {
+                    v_i: vec![4, 7, 3, 0],
+                },
+                // -X
+                FaceIndex {
+                    v_i: vec![1, 2, 6, 5],
+                },
+                // +Y
+                FaceIndex {
+                    v_i: vec![0, 1, 5, 4],
+                },
+                // -Y
+                FaceIndex {
+                    v_i: vec![3, 2, 6, 7],
+                },
+                // +Z
+                FaceIndex {
+                    v_i: vec![0, 3, 2, 1],
+                },
+                // -Z
+                FaceIndex {
+                    v_i: vec![5, 6, 7, 4],
+                },
+            ],
         }
     }
 
@@ -37,7 +98,7 @@ impl OBB {
         }
         p
     }
-
+    // not sure
     pub fn max(&self) -> P3 {
         let mut p = P3::from(&self.transform.translation);
         for i in 0..self.transform.rotation.size().0 {
@@ -106,80 +167,41 @@ impl OBB {
     }
 }
 
-impl Polyhedron for OBB {
+impl PolyhedronTrait for OBB {
     // number of vertices, edges, faces
-    fn sizes(&self) -> (usize, usize, usize) {
-        (8, 12, 6)
+    fn sizes(&self) -> PolyhedronSizes {
+        PolyhedronSizes {
+            vertices: 8,
+            edges: 12,
+            faces: 6,
+        }
     }
 
-    fn vertices(&self) -> Vec<P3> {
-        let xl = self.half_side.x;
-        let yl = self.half_side.y;
-        let zl = self.half_side.z;
-
-        vec![
-            self.transform.transform(&P3::new(xl, yl, zl)), // far top right
-            self.transform.transform(&P3::new(-xl, yl, zl)), // far top left
-            self.transform.transform(&P3::new(-xl, -yl, zl)), // far bot left
-            self.transform.transform(&P3::new(xl, -yl, zl)), // far bot right
-            self.transform.transform(&P3::new(xl, yl, -zl)), // near top right
-            self.transform.transform(&P3::new(-xl, yl, -zl)), // near top left
-            self.transform.transform(&P3::new(-xl, -yl, -zl)), // near bot left
-            self.transform.transform(&P3::new(xl, -yl, -zl)), // near bot right
-        ]
+    // fn sizes(&self) -> PolyhedronSizes;
+    // fn local_vertices_ref(&self) -> &Vec<P3>;
+    // fn local_vertex_ref(&self, vertex_idx: usize) -> &P3;
+    // fn transformed_vertices(&self) -> Vec<P3>;
+    // fn transformed_vertex(&self, vertex_idx: usize) -> P3;
+    // // an edge is as the indices of the two points, from vertices()
+    // fn edges_ref(&self) -> &Vec<EdgeIndex>;
+    // // a face is described as a Vec of vertex index, the order is trigonometric
+    // fn faces_ref(&self) -> &Vec<FaceIndex>;
+    // // face_index is an index of the Vec<Faces> returned by faces()
+    // fn face_normal_ref(&self, face_index: usize) -> &Vec3;
+    // fn transform_ref(&self) -> Transform;
+    fn local_vertices_ref(&self) -> &Vec<P3> {
+        &self.vertices
+    }
+    fn local_vertex_ref(&self, vertex_idx: usize) -> &P3 {
+        &self.vertices[vertex_idx]
     }
     // an edge is as the indices of the two points, from vertices()
-    fn edges(&self) -> Vec<EdgeIndex> {
-        // from top to bottom
-        // in trigonometric order
-        vec![
-            // top horizontal edges
-            EdgeIndex { vi1: 0, vi2: 1 },
-            EdgeIndex { vi1: 1, vi2: 5 },
-            EdgeIndex { vi1: 5, vi2: 4 },
-            EdgeIndex { vi1: 4, vi2: 0 },
-            // mid vertical edges
-            EdgeIndex { vi1: 0, vi2: 3 },
-            EdgeIndex { vi1: 1, vi2: 2 },
-            EdgeIndex { vi1: 5, vi2: 6 },
-            EdgeIndex { vi1: 4, vi2: 7 },
-            // bottom horizontal edges
-            EdgeIndex { vi1: 3, vi2: 2 },
-            EdgeIndex { vi1: 2, vi2: 6 },
-            EdgeIndex { vi1: 6, vi2: 7 },
-            EdgeIndex { vi1: 7, vi2: 3 },
-        ]
+    fn edges_ref(&self) -> &Vec<EdgeIndex> {
+        &self.edges
     }
     // a face is described as a Vec of vertex index, the order is trigonometric
-    fn faces(&self) -> Vec<FaceIndex> {
-        // by axis
-        // in trigonometric order
-        vec![
-            // +X
-            FaceIndex {
-                v_i: vec![4, 7, 3, 0],
-            },
-            // -X
-            FaceIndex {
-                v_i: vec![1, 2, 6, 5],
-            },
-            // +Y
-            FaceIndex {
-                v_i: vec![0, 1, 5, 4],
-            },
-            // -Y
-            FaceIndex {
-                v_i: vec![3, 2, 6, 7],
-            },
-            // +Z
-            FaceIndex {
-                v_i: vec![0, 3, 2, 1],
-            },
-            // -Z
-            FaceIndex {
-                v_i: vec![5, 6, 7, 4],
-            },
-        ]
+    fn faces_ref(&self) -> &Vec<FaceIndex> {
+        &self.faces
     }
 
     // face_index is an index of the Vec<Faces> returned by faces()
@@ -188,6 +210,15 @@ impl Polyhedron for OBB {
         let n = self.transform.rotation.row((face - modulo) / 2);
         n - n * TWO * (modulo as Real) // if face is odd, then the normal is flipped, otherwise nothing
 
+        // match face {
+        //     0 => self.transform.rotation.row(0),
+        //     1 => -self.transform.rotation.row(0),
+        //     2 => self.transform.rotation.row(1),
+        //     3 => -self.transform.rotation.row(1),
+        //     4 => self.transform.rotation.row(2),
+        //     5 => -self.transform.rotation.row(2),
+        //     _ => panic!(),
+        // }
         // understandable version
         // if face % 2 == 0 {
         //     self.transform.rotation.row(face / 2)
@@ -195,14 +226,14 @@ impl Polyhedron for OBB {
         //     -self.transform.rotation.row((face - 1) / 2)
         // }
     }
-}
-
-impl SAT for OBB {
-    fn separating_axis(&self) -> Vec<Vec3> {
+    fn transform_ref(&self) -> &Transform {
+        &self.transform
+    }
+    fn sat_separating_axis(&self) -> Vec<(Vec3, usize)> {
         vec![
-            self.transform.rotation.row(0),
-            self.transform.rotation.row(1),
-            self.transform.rotation.row(2),
+            (self.transform_ref().rotation.row(0), 0),
+            (self.transform_ref().rotation.row(1), 2),
+            (self.transform_ref().rotation.row(2), 4),
         ]
     }
 }
@@ -210,9 +241,8 @@ impl SAT for OBB {
 #[cfg(test)]
 mod tests {
     use super::OBB;
-    use crate::math::{Real, Rotation, Transform, Vec3, ONE, P3, ZERO};
-    use assert_approx_eq::assert_approx_eq;
-
+    use crate::geometry::geometry_traits::PolyhedronTrait;
+    use crate::math::{helper, Real, Rotation, Transform, Vec3, ONE, P3, ZERO};
     #[test]
     fn OBB_is_inside() {
         // not rotated
@@ -328,6 +358,123 @@ mod tests {
             // assert_eq!(p[0], 2.0);
             // assert_eq!(p[1], ZERO);
             // assert_eq!(p[2], ZERO);
+        }
+    }
+    #[test]
+    fn normal_face_test() {
+        let obb = OBB::new(
+            Vec3::new(ONE, ONE, ONE),
+            Transform::new(
+                Vec3::ones(),
+                Rotation::composed(
+                    helper::angle_2_rad(30 as Real),
+                    helper::angle_2_rad(-35 as Real),
+                    helper::angle_2_rad(-45 as Real),
+                ),
+                Vec3::new(1.125 as Real, 0.934 as Real, ZERO),
+            ),
+        );
+
+        // X+
+        {
+            let x = obb.transform.rotation.row(0);
+            let normal = obb.face_normal(0);
+
+            assert_eq!(x[0], normal[0]);
+            assert_eq!(x[1], normal[1]);
+            assert_eq!(x[2], normal[2]);
+        }
+        // X-
+        {
+            let x = -obb.transform.rotation.row(0);
+            let normal = obb.face_normal(1);
+
+            assert_eq!(x[0], normal[0]);
+            assert_eq!(x[1], normal[1]);
+            assert_eq!(x[2], normal[2]);
+        }
+        // Y+
+        {
+            let x = obb.transform.rotation.row(1);
+            let normal = obb.face_normal(2);
+
+            assert_eq!(x[0], normal[0]);
+            assert_eq!(x[1], normal[1]);
+            assert_eq!(x[2], normal[2]);
+        }
+        // Y-
+        {
+            let x = -obb.transform.rotation.row(1);
+            let normal = obb.face_normal(3);
+
+            assert_eq!(x[0], normal[0]);
+            assert_eq!(x[1], normal[1]);
+            assert_eq!(x[2], normal[2]);
+        }
+        // Z+
+        {
+            let x = obb.transform.rotation.row(2);
+            let normal = obb.face_normal(4);
+
+            assert_eq!(x[0], normal[0]);
+            assert_eq!(x[1], normal[1]);
+            assert_eq!(x[2], normal[2]);
+        }
+        // Z-
+        {
+            let x = -obb.transform.rotation.row(2);
+            let normal = obb.face_normal(5);
+
+            assert_eq!(x[0], normal[0]);
+            assert_eq!(x[1], normal[1]);
+            assert_eq!(x[2], normal[2]);
+        }
+    }
+    #[test]
+    fn computed_against_stored_normal() {
+        let obb = OBB::new(
+            Vec3::new(ONE, ONE, ONE),
+            Transform::new(
+                Vec3::ones(),
+                Rotation::composed(
+                    helper::angle_2_rad(30 as Real),
+                    helper::angle_2_rad(-35 as Real),
+                    helper::angle_2_rad(-45 as Real),
+                ),
+                // Vec3::new(1.125 as Real, 0.934 as Real, ZERO),
+                Vec3::zero(),
+            ),
+        );
+        println!(
+            "{:?}",
+            Rotation::composed(
+                helper::angle_2_rad(30 as Real),
+                helper::angle_2_rad(-35 as Real),
+                helper::angle_2_rad(-45 as Real),
+            ) 
+        );
+
+        println!("{:?}", obb.transform.position());
+        for i in 0..obb.faces_ref()[0].v_i.len() {
+            println!(
+                "p{:?} = {:?}",
+                obb.faces_ref()[0].v_i[i],
+                obb.transform
+                    .transform_vec(&Vec3::from(obb.local_vertex_ref(obb.faces_ref()[0].v_i[i])))
+            );
+        }
+        for i in 0..6 {
+            let computed_normal = obb.computed_face_normal(i);
+            let stored_normal = obb.face_normal(i);
+            println!(
+                "=== i {:?} computed_normal {:?} stored_normal {:?}",
+                i,
+                helper::vect_angles(&computed_normal),
+                helper::vect_angles(&stored_normal)
+            );
+            assert_eq!(computed_normal[0], stored_normal[0]);
+            assert_eq!(computed_normal[1], stored_normal[1]);
+            assert_eq!(computed_normal[2], stored_normal[2]);
         }
     }
 }

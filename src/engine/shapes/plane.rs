@@ -1,5 +1,6 @@
 use super::{Shape, ShapeType};
-use crate::math::{Real, Transform, Vec3, ONE, P3, Mat3};
+use crate::geometry::geometry_traits::PolyhedronTrait;
+use crate::math::{Mat3, Real, Transform, Vec3, ONE, P3};
 
 pub struct Plane {
     pub normal: Vec3,
@@ -23,9 +24,27 @@ impl Plane {
         }
     }
 
+    pub fn from_polyhedron_face<T: PolyhedronTrait>(polyhedron: &T, face_idx: usize) -> Plane {
+        // compute center point of face
+        let face = &polyhedron.faces_ref()[face_idx];
+        let mut midpoint = Vec3::zero();
+
+        for vertex_idx in &face.v_i {
+            let p = polyhedron.transformed_vertex(*vertex_idx);
+            midpoint[0] += p[0];
+            midpoint[1] += p[1];
+            midpoint[2] += p[2];
+        }
+        let size = face.v_i.len() as Real;
+        Plane::new(
+            polyhedron.face_normal(face_idx),
+            P3::new(midpoint[0] / size, midpoint[1] / size, midpoint[2] / size),
+        )
+    }
+
     /**
-     * Positive distance if p is in the direction of the normal
-     * Negative distance if p is in the opposite direction
+     * Positive distance if p is in the direction of the normal  
+     * Negative distance if p is in the opposite direction  
      * 0 if on
      */
     pub fn signed_distance(&self, p: &P3) -> Real {

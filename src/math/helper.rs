@@ -20,17 +20,20 @@ pub fn sign(x: Real) -> Real {
     }
 }
 
-pub fn closest_to_p(p: &P3, pts: &Vec<P3>) -> usize {
-    let mut closest_vertex = 0;
-    let mut d = (&pts[closest_vertex] - p).norm_squared();
-    for i in 1..pts.len() {
-        let dd = (p - &pts[i]).norm_squared();
-        if d > dd {
-            d = dd;
-            closest_vertex = i;
-        }
+pub fn min(f1: Real, f2: Real) -> Real {
+    if f1 < f2 {
+        f1
+    } else {
+        f2
     }
-    closest_vertex
+}
+
+pub fn max(f1: Real, f2: Real) -> Real {
+    if f1 > f2 {
+        f1
+    } else {
+        f2
+    }
 }
 
 const RAD2ANGLECONST: Real = std::f32::consts::PI / (180 as Real);
@@ -40,4 +43,8 @@ pub fn angle_2_rad(angle: Real) -> Real {
 }
 pub fn rad_2_angle(rad: Real) -> Real {
     rad / RAD2ANGLECONST
+}
+
+pub fn vect_angles(v: &Vec3) -> Vec3 {
+    Vec3::new(rad_2_angle(v[0]), rad_2_angle(v[1]), rad_2_angle(v[2]))
 }
