@@ -80,5 +80,5 @@ pub trait PolyhedronTrait {
         (self.transformed_vertex(edge.vi2) - self.transformed_vertex(edge.vi1)).normalized()
     }
     // the separating axis and his index in the normals
-    fn sat_separating_axis(&self) -> Vec<(Vec3, usize)>;
+    fn sat_separating_axis(&self) -> Vec<usize>;
 }

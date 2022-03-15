@@ -229,12 +229,14 @@ impl PolyhedronTrait for OBB {
     fn transform_ref(&self) -> &Transform {
         &self.transform
     }
-    fn sat_separating_axis(&self) -> Vec<(Vec3, usize)> {
-        vec![
-            (self.transform_ref().rotation.row(0), 0),
-            (self.transform_ref().rotation.row(1), 2),
-            (self.transform_ref().rotation.row(2), 4),
-        ]
+    fn sat_separating_axis(&self) -> Vec<usize> {
+        // vec![
+        //     (self.transform_ref().rotation.row(0), 0),
+        //     (self.transform_ref().rotation.row(1), 2),
+        //     (self.transform_ref().rotation.row(2), 4),
+        // ]
+
+        vec![0, 2, 4]
     }
 }
 
@@ -451,7 +453,7 @@ mod tests {
                 helper::angle_2_rad(30 as Real),
                 helper::angle_2_rad(-35 as Real),
                 helper::angle_2_rad(-45 as Real),
-            ) 
+            )
         );
 
         println!("{:?}", obb.transform.position());

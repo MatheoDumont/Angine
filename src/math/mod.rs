@@ -3,6 +3,8 @@ pub mod matrix;
 pub mod point;
 pub mod transform;
 pub mod vector;
+// pub mod static_square_matrix;
+pub mod quaternion;
 
 pub use helper::*;
 pub use matrix::Mat3;

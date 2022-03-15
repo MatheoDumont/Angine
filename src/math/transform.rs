@@ -58,11 +58,15 @@ pub struct Transform {
     pub rotation: Mat3,
     pub translation: Vec3,
 }
-
 impl Transform {
     pub fn new(scaling_vec: Vec3, rotation_mat: Mat3, translation_vec: Vec3) -> Transform {
+        let mut r = rotation_mat;
+        *r.at_mut(0, 0) *= scaling_vec[0];
+        *r.at_mut(1, 1) *= scaling_vec[1];
+        *r.at_mut(2, 2) *= scaling_vec[2];
+        
         Transform {
-            rotation: Mat3::diag(scaling_vec) * rotation_mat,
+            rotation: r,
             translation: translation_vec,
         }
     }

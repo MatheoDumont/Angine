@@ -162,17 +162,17 @@ fn face_intersection<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Face {
         // closest point to the normal
         let result = closest_projection_vec(&normal, &transformed_vertices_B, &point_on_face);
 
-        if result.0 > ZERO {
-            println!(
-                "face_index:{:?} normal:{:?} norm:{:?} transformed_vertices_B:{:?} distance:{:?} ",
-                face_index,
-                normal,
-                normal.norm(),
-                transformed_vertices_B[result.1],
-                result.0
-            );
-            return best_face;
-        }
+        // if result.0 > ZERO {
+        //     println!(
+        //         "face_index:{:?} normal:{:?} norm:{:?} transformed_vertices_B:{:?} distance:{:?} ",
+        //         face_index,
+        //         normal,
+        //         normal.norm(),
+        //         transformed_vertices_B[result.1],
+        //         result.0
+        //     );
+        //     return best_face;
+        // }
 
         if result.0 < best_face.distance {
             best_face.distance = result.0;
@@ -181,36 +181,83 @@ fn face_intersection<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Face {
         }
     }
 
-    Some(best_face)
+    best_face
 }
 
 pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResult> {
-    let face_A = face_intersection(shape_A, shape_B);
+    println!("=====================================================");
+    let vertices_A = shape_A.transformed_vertices();
+    let vertices_B = shape_B.transformed_vertices();
 
-    
+    // ======================== Normals of A ========================
+    let mut best_face_A = Face {
+        distance: f32::MAX,
+        axis: Vec3::zero(),
+        face_index: 0,
+    };
+    for face_index in shape_A.sat_separating_axis() {
+        let normal = shape_A.face_normal(face_index);
 
-    let face_B = face_intersection(shape_B, shape_A);
+        let proj1 = project(&normal, &vertices_A);
+        let proj2 = project(&normal, &vertices_B);
 
-    if face_A.is_none() && face_B.is_none() {
-        return None;
+        if let Some(x) = overlapping_or_touching(&proj1, &proj2) {
+            if x < best_face_A.distance {
+                best_face_A.distance = x;
+                best_face_A.axis = normal;
+                best_face_A.face_index = face_index;
+            }
+        } else {
+            return None;
+        }
     }
-    
+    println!(
+        "Face A distance:{:?} axis:{:?}",
+        best_face_A.distance, best_face_A.axis
+    );
+
+    // ======================== Normals of B ========================
+    let mut best_face_B = Face {
+        distance: f32::MAX,
+        axis: Vec3::zero(),
+        face_index: 0,
+    };
+    for face_index in shape_B.sat_separating_axis() {
+        let normal = shape_B.face_normal(face_index);
+
+        let proj1 = project(&normal, &vertices_A);
+        let proj2 = project(&normal, &vertices_B);
+
+        if let Some(x) = overlapping_or_touching(&proj1, &proj2) {
+            if x < best_face_B.distance {
+                best_face_B.distance = x;
+                best_face_B.axis = normal;
+                best_face_B.face_index = face_index;
+            }
+        } else {
+            return None;
+        }
+    }
+    println!(
+        "Face B distance:{:?} axis:{:?}",
+        best_face_B.distance, best_face_B.axis
+    );
+
+    // ======================== Cross product between edges of A and B ========================
     let mut best_edge = Edge {
         distance: f32::MAX,
         axis: Vec3::zero(),
         edge_a_index: 0,
         edge_b_index: 0,
     };
-
-    let vertices_A = shape_A.transformed_vertices();
-    let vertices_B = shape_B.transformed_vertices();
-
     for edge1_index in 0..shape_A.sizes().edges {
         let edge1 = &shape_A.edges_ref()[edge1_index];
         for edge2_index in 0..shape_B.sizes().edges {
-            let mut cross = shape_A
-                .edge_direction(edge1_index)
-                .cross(&shape_B.edge_direction(edge2_index));
+            let edge2 = &shape_B.edges_ref()[edge2_index];
+            let direction_edge_A = vertices_A[edge1.vi1] - vertices_A[edge1.vi2];
+            let direction_edge_B = vertices_B[edge2.vi1] - vertices_B[edge2.vi2];
+
+            let mut cross = direction_edge_A.cross(&direction_edge_B);
             let norm = cross.norm();
 
             if norm == ZERO {
@@ -227,9 +274,13 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
 
             // best feature on the current computed axis
             // let result = closest_projection_vec(&cross, &vertices_B, &vertices_A[edge1.vi1]);
-            // if result.0 > ZERO {
-            //     return None;
+            // if result.0 < best_edge.distance {
+            //     best_edge.distance = result.0;
+            //     best_edge.axis = cross;
+            //     best_edge.edge_a_index = edge1_index;
+            //     best_edge.edge_b_index = edge2_index;
             // }
+
             let p1 = project(&cross, &vertices_A);
             let p2 = project(&cross, &vertices_B);
 
@@ -246,119 +297,28 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
             // let cross_inv = -cross;
             // let edge2 = &shape_B.edges_ref()[edge2_index];
             // let result2 = closest_projection_vec(&cross_inv, &vertices_A, &vertices_B[edge2.vi1]);
-
-            // if result.0 < best_edge.distance {
-            //     best_edge.distance = result.0;
-            //     best_edge.axis = cross;
+            // if result2.0 < best_edge.distance {
+            //     best_edge.distance = result2.0;
+            //     best_edge.axis = cross_inv;
             //     best_edge.edge_a_index = edge1_index;
             //     best_edge.edge_b_index = edge2_index;
             // }
         }
     }
+    println!(
+        "Edge distance:{:?} axis:{:?}",
+        best_edge.distance, best_edge.axis
+    );
+    // if best_edge.distance > ZERO {
+    //     return None;
+    // }
 
     Some(SAT3DResult {
-        face_A: face_A.unwrap(),
-        face_B: face_B.unwrap(),
+        face_A: best_face_A,
+        face_B: best_face_B,
         edge: best_edge,
     })
 }
-
-// pub fn sat_3D(
-//     shape1_pos: P3,
-//     shape1_vertices: &Vec<P3>,
-//     shape1_axis: &Vec<Vec3>,
-//     shape1_edges: &Vec<EdgeIndex>,
-//     shape2_vertices: &Vec<P3>,
-//     shape2_axis: &Vec<Vec3>,
-//     shape2_edges: &Vec<EdgeIndex>,
-// ) -> Option<SAT3DResult> {
-//     let mut distance = f32::MAX;
-//     let mut best_axis = &Vec3::zero();
-//     let mut idx_best_axis: Option<usize> = None;
-
-//     // face of A
-//     for axis_idx in 0..shape1_axis.len() {
-//         let axis = &shape1_axis[axis_idx];
-//         let proj1 = project(axis, &shape1_vertices);
-//         let proj2 = project(axis, &shape2_vertices);
-
-//         if let Some(x) = overlapping_or_touching(&proj1, &proj2) {
-//             if x < distance {
-//                 distance = x;
-//                 best_axis = axis;
-//                 idx_best_axis = Some(axis_idx);
-//             }
-//         } else {
-//             return None;
-//         }
-//     }
-//     let face_A = Face(distance, best_axis.clone(), idx_best_axis);
-//     distance = f32::MAX;
-
-//     // face of B
-//     for axis_idx in 0..shape2_axis.len() {
-//         let axis = &shape2_axis[axis_idx];
-//         let proj1 = project(axis, &shape1_vertices);
-//         let proj2 = project(axis, &shape2_vertices);
-
-//         if let Some(x) = overlapping_or_touching(&proj1, &proj2) {
-//             if x < distance {
-//                 distance = x;
-//                 best_axis = axis;
-//                 idx_best_axis = Some(axis_idx);
-//             }
-//         } else {
-//             return None;
-//         }
-//     }
-
-//     // neg axis to point from a to b
-//     let face_B = Face(distance, best_axis.clone(), idx_best_axis);
-
-//     //
-//     // let cross_axis = cross_separating_axis(shape1_axis, shape2_axis);
-//     // for axis in &cross_axis {
-//     //     let proj1 = project(axis, &shape1_vertices);
-//     //     let proj2 = project(axis, &shape2_vertices);
-
-//     //     if let Some(x) = overlapping_or_touching(&proj1, &proj2) {
-//     //         if x < minimum_translation {
-//     //             minimum_translation = x;
-//     //             minimum_axis = axis;
-//     //         }
-//     //     } else {
-//     //         return None;
-//     //     }
-//     // }
-
-//     let mut best_edge1;
-//     let mut best_edge2;
-
-//     for edge1 in shape1_edges {
-//         for edge2 in shape2_edges {
-//             let mut cross = edge1
-//                 .direction(shape1_vertices)
-//                 .cross(&edge2.direction(shape2_vertices));
-
-//             let norm = cross.norm();
-//             if norm != ZERO {
-//                 cross /= norm;
-//                 // reoriente la normale pour partir de A
-//                 let r = shape1_vertices[edge1.vi1] - shape1_pos;
-//                 if cross.dot(&r) < ZERO {
-//                     cross = -cross;
-//                 }
-//                 // use cross
-//             }
-//         }
-//     }
-
-//     Some(SAT3DResult {
-//         face_A,
-//         face_B,
-//         edge: Edge(distance, best_axis.clone(), best_edge1, best_edge2),
-//     })
-// }
 
 fn project(axis: &Vec3, vertices: &Vec<P3>) -> Projection {
     let mut min = axis.dot_point(&vertices[0]);
@@ -539,7 +499,7 @@ mod test {
             assert!(sat.is_some());
 
             let sat_unwrapped = sat.unwrap();
-            let mut distance = ZERO;
+            let mut distance;
             let mut axis = Vec3::zero();
             if sat_unwrapped.face_A.distance < sat_unwrapped.face_B.distance {
                 distance = sat_unwrapped.face_A.distance;
@@ -700,10 +660,6 @@ mod test {
             // println!("{:?} \n {:?} \n {:?} \n", unw.face_A, unw.face_B, unw.edge);
             assert!(r.is_some());
         }
-    }
-    #[test]
-    fn specific() // almost the same but no intersection
-    {
         {
             let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
             let obb2 = OBB::new(
@@ -759,9 +715,9 @@ mod test {
         );
 
         for sep in obb2.sat_separating_axis() {
-            let normal_computed = obb2.computed_face_normal(sep.1);
-            println!("id :{:?}", sep.1);
-            println!("rotation:{:?} \n", sep.0);
+            let normal_computed = obb2.computed_face_normal(sep);
+            println!("id :{:?}", sep);
+            println!("rotation:{:?} \n", obb2.face_normal(sep));
             println!("computed:{:?} \n", normal_computed);
         }
     }
