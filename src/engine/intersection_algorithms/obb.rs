@@ -2,7 +2,6 @@ use crate::engine::shapes::OBB;
 use crate::geometry::{sat, sat::SAT};
 use crate::math::{Vec3, P3};
 
-
 pub fn obb_obb(obb1: &OBB, obb2: &OBB) -> bool {
     // let p = obb1.closest_point(&P3::from(obb2.transform.translation));
     // obb2.is_inside(&p)
@@ -84,9 +83,9 @@ mod tests {
 
         // intersection between an edge of A and an edge of B without either of the vertices of A or B penetrating the other shape (A/B)
         {
-            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
+            let obb1 = OBB::new(Vec3::new(0.5, 0.5, 0.5), Transform::identity());
             let obb2 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
+                Vec3::new(0.5, 0.5, 0.5),
                 Transform::new(
                     Vec3::ones(),
                     Rotation::composed(
@@ -94,7 +93,25 @@ mod tests {
                         helper::angle_2_rad(-35 as Real),
                         helper::angle_2_rad(-45 as Real),
                     ),
-                    Vec3::new(2.1 as Real, 1.7 as Real, ZERO),
+                    Vec3::new(1 as Real, 0.9 as Real, ZERO),
+                ),
+            );
+            assert_eq!(obb_obb(&obb1, &obb2), true);
+            assert_eq!(obb_obb(&obb2, &obb1), true);
+        }
+
+        {
+            let obb1 = OBB::new(Vec3::new(0.5, 0.5, 0.5), Transform::identity());
+            let obb2 = OBB::new(
+                Vec3::new(0.5, 0.5, 0.5),
+                Transform::new(
+                    Vec3::ones(),
+                    Rotation::composed(
+                        helper::angle_2_rad(-30 as Real),
+                        helper::angle_2_rad(35 as Real),
+                        helper::angle_2_rad(45 as Real),
+                    ),
+                    Vec3::new(1 as Real, 0.9 as Real, ZERO),
                 ),
             );
             assert_eq!(obb_obb(&obb1, &obb2), true);

@@ -1,5 +1,7 @@
 use super::{Real, Vec3, ZERO};
-use std::{convert::From, ops::Add, ops::Index, ops::IndexMut, ops::Sub, ops::AddAssign, ops::SubAssign};
+use std::{
+    convert::From, ops::Add, ops::AddAssign, ops::Index, ops::IndexMut, ops::Sub, ops::SubAssign,
+};
 
 #[derive(Copy, Clone, Debug)]
 pub struct P3 {
@@ -145,7 +147,6 @@ impl AddAssign<Vec3> for P3 {
         self[0] += v.x;
         self[1] += v.y;
         self[2] += v.z;
-
     }
 }
 
@@ -154,6 +155,5 @@ impl SubAssign<Vec3> for P3 {
         self[0] -= v.x;
         self[1] -= v.y;
         self[2] -= v.z;
-
     }
 }

@@ -9,25 +9,6 @@ pub trait SAT {
     fn separating_axis(&self) -> Vec<Vec3>;
 }
 
-/**
- * Compute the cross product between each axis of both shapes.
- */
-pub fn cross_separating_axis(axis1: &Vec<Vec3>, axis2: &Vec<Vec3>) -> Vec<Vec3> {
-    let mut v = Vec::with_capacity(axis1.len() * axis2.len());
-
-    for shape_axis1 in axis1 {
-        for shape_axis2 in axis2 {
-            let mut cross = shape_axis1.cross(shape_axis2);
-            let norm = cross.norm();
-            if norm != ZERO {
-                cross /= norm;
-                v.push(cross);
-            }
-        }
-    }
-    v
-}
-
 pub struct Projection {
     min: Real,
     max: Real,
@@ -62,6 +43,34 @@ pub struct SAT3DResult {
     pub face_A: Face,
     pub face_B: Face,
     pub edge: Edge,
+}
+
+fn project(axis: &Vec3, vertices: &Vec<P3>) -> Projection {
+    let mut min = axis.dot_point(&vertices[0]);
+    let mut max = min;
+
+    for i in 1..vertices.len() {
+        let x = axis.dot_point(&vertices[i]);
+        if x > max {
+            max = x;
+        } else if x < min {
+            min = x;
+        }
+    }
+
+    Projection { min: min, max: max }
+}
+
+fn overlapping_or_touching(p1: &Projection, p2: &Projection) -> Option<Real> {
+    if p1.max >= p2.min && p2.max >= p1.min {
+        if p1.max > p2.max {
+            Some(p2.max - p1.min)
+        } else {
+            Some(p1.max - p2.min)
+        }
+    } else {
+        None
+    }
 }
 
 pub fn sat_2D(
@@ -211,11 +220,6 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
             return None;
         }
     }
-    println!(
-        "Face A distance:{:?} axis:{:?}",
-        best_face_A.distance, best_face_A.axis
-    );
-
     // ======================== Normals of B ========================
     let mut best_face_B = Face {
         distance: f32::MAX,
@@ -238,10 +242,6 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
             return None;
         }
     }
-    println!(
-        "Face B distance:{:?} axis:{:?}",
-        best_face_B.distance, best_face_B.axis
-    );
 
     // ======================== Cross product between edges of A and B ========================
     let mut best_edge = Edge {
@@ -272,15 +272,6 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
                 cross = -cross;
             }
 
-            // best feature on the current computed axis
-            // let result = closest_projection_vec(&cross, &vertices_B, &vertices_A[edge1.vi1]);
-            // if result.0 < best_edge.distance {
-            //     best_edge.distance = result.0;
-            //     best_edge.axis = cross;
-            //     best_edge.edge_a_index = edge1_index;
-            //     best_edge.edge_b_index = edge2_index;
-            // }
-
             let p1 = project(&cross, &vertices_A);
             let p2 = project(&cross, &vertices_B);
 
@@ -294,58 +285,14 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
             } else {
                 return None;
             }
-            // let cross_inv = -cross;
-            // let edge2 = &shape_B.edges_ref()[edge2_index];
-            // let result2 = closest_projection_vec(&cross_inv, &vertices_A, &vertices_B[edge2.vi1]);
-            // if result2.0 < best_edge.distance {
-            //     best_edge.distance = result2.0;
-            //     best_edge.axis = cross_inv;
-            //     best_edge.edge_a_index = edge1_index;
-            //     best_edge.edge_b_index = edge2_index;
-            // }
         }
     }
-    println!(
-        "Edge distance:{:?} axis:{:?}",
-        best_edge.distance, best_edge.axis
-    );
-    // if best_edge.distance > ZERO {
-    //     return None;
-    // }
 
     Some(SAT3DResult {
         face_A: best_face_A,
         face_B: best_face_B,
         edge: best_edge,
     })
-}
-
-fn project(axis: &Vec3, vertices: &Vec<P3>) -> Projection {
-    let mut min = axis.dot_point(&vertices[0]);
-    let mut max = min;
-
-    for i in 1..vertices.len() {
-        let x = axis.dot_point(&vertices[i]);
-        if x > max {
-            max = x;
-        } else if x < min {
-            min = x;
-        }
-    }
-
-    Projection { min: min, max: max }
-}
-
-fn overlapping_or_touching(p1: &Projection, p2: &Projection) -> Option<Real> {
-    if p1.max >= p2.min && p2.max >= p1.min {
-        if p1.max > p2.max {
-            Some(p2.max - p1.min)
-        } else {
-            Some(p1.max - p2.min)
-        }
-    } else {
-        None
-    }
 }
 
 #[cfg(test)]
@@ -641,29 +588,9 @@ mod test {
 
         // intersection between an edge of A and an edge of B without either of the vertices of A or B penetrating the other shape (A/B)
         {
-            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
+            let obb1 = OBB::new(Vec3::new(0.5, 0.5, 0.5), Transform::identity());
             let obb2 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::new(
-                    Vec3::ones(),
-                    Rotation::composed(
-                        helper::angle_2_rad(30 as Real),
-                        helper::angle_2_rad(-35 as Real),
-                        helper::angle_2_rad(-45 as Real),
-                    ),
-                    Vec3::new(1.0 as Real, 0.8 as Real, ZERO),
-                ),
-            );
-            // let r = sat_3D(&obb1, &obb2);
-            let r = sat_3D(&obb1, &obb2);
-            // let unw = r.unwrap();
-            // println!("{:?} \n {:?} \n {:?} \n", unw.face_A, unw.face_B, unw.edge);
-            assert!(r.is_some());
-        }
-        {
-            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-            let obb2 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
+                Vec3::new(0.5, 0.5, 0.5),
                 Transform::new(
                     Vec3::ones(),
                     Rotation::composed(
@@ -671,17 +598,17 @@ mod test {
                         helper::angle_2_rad(35 as Real),
                         helper::angle_2_rad(45 as Real),
                     ),
-                    Vec3::new(1.125 as Real, 0.934 as Real, ZERO),
+                    Vec3::new(1 as Real, 0.9 as Real, ZERO),
                 ),
             );
-
             let r = sat_3D(&obb1, &obb2);
-            assert!(r.is_none());
+            assert!(r.is_some());
         }
+
         {
-            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
+            let obb1 = OBB::new(Vec3::new(0.5, 0.5, 0.5), Transform::identity());
             let obb2 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
+                Vec3::new(0.5, 0.5, 0.5),
                 Transform::new(
                     Vec3::ones(),
                     Rotation::composed(
@@ -689,36 +616,35 @@ mod test {
                         helper::angle_2_rad(-35 as Real),
                         helper::angle_2_rad(-45 as Real),
                     ),
-                    Vec3::new(1.125 as Real, 0.934 as Real, ZERO),
+                    Vec3::new(1.2 as Real, 1.2 as Real, ZERO),
                 ),
             );
-
             let r = sat_3D(&obb1, &obb2);
             assert!(r.is_none());
         }
     }
-    #[test]
-    fn test_normal() {
-        let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
+    // #[test]
+    // fn test_normal() {
+    //     let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
 
-        let obb2 = OBB::new(
-            Vec3::new(ONE, ONE, ONE),
-            Transform::new(
-                Vec3::ones(),
-                Rotation::composed(
-                    helper::angle_2_rad(30 as Real),
-                    helper::angle_2_rad(-35 as Real),
-                    helper::angle_2_rad(-45 as Real),
-                ),
-                Vec3::new(1.125 as Real, 0.934 as Real, ZERO),
-            ),
-        );
+    //     let obb2 = OBB::new(
+    //         Vec3::new(ONE, ONE, ONE),
+    //         Transform::new(
+    //             Vec3::ones(),
+    //             Rotation::composed(
+    //                 helper::angle_2_rad(30 as Real),
+    //                 helper::angle_2_rad(-35 as Real),
+    //                 helper::angle_2_rad(-45 as Real),
+    //             ),
+    //             Vec3::new(1.125 as Real, 0.934 as Real, ZERO),
+    //         ),
+    //     );
 
-        for sep in obb2.sat_separating_axis() {
-            let normal_computed = obb2.computed_face_normal(sep);
-            println!("id :{:?}", sep);
-            println!("rotation:{:?} \n", obb2.face_normal(sep));
-            println!("computed:{:?} \n", normal_computed);
-        }
-    }
+    //     for sep in obb2.sat_separating_axis() {
+    //         let normal_computed = obb2.computed_face_normal(sep);
+    //         println!("id :{:?}", sep);
+    //         println!("rotation:{:?} \n", obb2.face_normal(sep));
+    //         println!("computed:{:?} \n", normal_computed);
+    //     }
+    // }
 }

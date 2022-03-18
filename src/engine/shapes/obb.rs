@@ -456,13 +456,13 @@ mod tests {
             )
         );
 
-        println!("{:?}", obb.transform.position());
         for i in 0..obb.faces_ref()[0].v_i.len() {
+            let index = obb.faces_ref()[0].v_i[i];
             println!(
                 "p{:?} = {:?}",
                 obb.faces_ref()[0].v_i[i],
                 obb.transform
-                    .transform_vec(&Vec3::from(obb.local_vertex_ref(obb.faces_ref()[0].v_i[i])))
+                    .transform_vec(&Vec3::from(obb.local_vertex_ref(index)))
             );
         }
         for i in 0..6 {
@@ -471,8 +471,10 @@ mod tests {
             println!(
                 "=== i {:?} computed_normal {:?} stored_normal {:?}",
                 i,
-                helper::vect_angles(&computed_normal),
-                helper::vect_angles(&stored_normal)
+                // helper::vect_angles(&computed_normal),
+                // helper::vect_angles(&stored_normal)
+                computed_normal,
+                stored_normal,
             );
             assert_eq!(computed_normal[0], stored_normal[0]);
             assert_eq!(computed_normal[1], stored_normal[1]);

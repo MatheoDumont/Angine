@@ -1,4 +1,4 @@
-use super::{Mat3, Real, Vec3, ONE, P3, ZERO};
+use super::{Mat3, Quaternion, Real, Vec3, ONE, P3, ZERO};
 
 use std::ops::Mul;
 
@@ -25,26 +25,8 @@ impl Rotation {
     }
 
     pub fn composed(x_axis_rad: Real, y_axis_rad: Real, z_axis_rad: Real) -> Mat3 {
-        Rotation::Z(z_axis_rad) * Rotation::X(x_axis_rad) * Rotation::Y(y_axis_rad)
-    }
-
-    pub fn axis_angle(normalized_axis: Vec3, rad: Real) -> Mat3 {
-        let c = rad.cos();
-        let s = rad.sin();
-        let t = ONE - c;
-        let x = normalized_axis.x;
-        let y = normalized_axis.y;
-        let z = normalized_axis.z;
-
-        let op1 = t * x * y + s * z;
-        let op2 = t * x * z + s * y;
-        let op3 = t * y * z + s * x;
-
-        Mat3::from_array([
-            [t * x * x + c, op1, op2],
-            [op1, t * y * y + c, op3],
-            [op2, op3, t * z * z + c],
-        ])
+        // Rotation::Z(z_axis_rad) * Rotation::X(x_axis_rad) * Rotation::Y(y_axis_rad)
+        Quaternion::from_euler_rads(x_axis_rad, y_axis_rad, z_axis_rad).to_mat3()
     }
 }
 
@@ -64,7 +46,6 @@ impl Transform {
         *r.at_mut(0, 0) *= scaling_vec[0];
         *r.at_mut(1, 1) *= scaling_vec[1];
         *r.at_mut(2, 2) *= scaling_vec[2];
-        
         Transform {
             rotation: r,
             translation: translation_vec,
@@ -129,65 +110,6 @@ impl Mul for &Transform {
         Transform {
             rotation: &self.rotation * &o.rotation,
             translation: &self.translation + &o.translation,
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use assert_approx_eq::assert_approx_eq;
-
-    #[test]
-    fn rotation_methods_test() {
-        let rad = std::f32::consts::FRAC_PI_2;
-        // Z rotation
-        {
-            let v = Vec3::new(ONE, ZERO, ZERO);
-            let rotated = Rotation::Z(rad) * v;
-            // println!("{:?}", rotated);
-            assert_approx_eq!(rotated.x, ZERO, 1.0e-6);
-            assert_approx_eq!(rotated.y, ONE, 1.0e-6);
-            assert_approx_eq!(rotated.z, ZERO, 1.0e-6);
-        }
-        // Y rotation
-        {
-            let v = Vec3::new(ZERO, ZERO, ONE);
-            let rotated = Rotation::Y(rad) * v;
-            // println!("{:?}", rotated);
-            assert_approx_eq!(rotated.x, ONE, 1.0e-6);
-            assert_approx_eq!(rotated.y, ZERO, 1.0e-6);
-            assert_approx_eq!(rotated.z, ZERO, 1.0e-6);
-        }
-        // X rotation
-        {
-            let v = Vec3::new(ZERO, ONE, ZERO);
-            let rotated = Rotation::X(rad) * v;
-            // println!("{:?}", rotated);
-            assert_approx_eq!(rotated.x, ZERO, 1.0e-6);
-            assert_approx_eq!(rotated.y, ZERO, 1.0e-6);
-            assert_approx_eq!(rotated.z, ONE, 1.0e-6);
-        }
-
-        // composed
-        {
-            let v = Vec3::new(ONE, ZERO, ZERO);
-            let rotated = Rotation::composed(rad, rad, rad) * v;
-            // println!("{:?}", rotated);
-            assert_approx_eq!(rotated.x, -ONE, 1.0e-6);
-            assert_approx_eq!(rotated.y, ZERO, 1.0e-6);
-            assert_approx_eq!(rotated.z, ZERO, 1.0e-6);
-        }
-
-        // axis angle
-        {
-            let z_axis = Vec3::new(ZERO, ZERO, ONE);
-            let v = Vec3::new(ONE, ZERO, ZERO);
-            let rotated = Rotation::axis_angle(z_axis, rad) * v;
-            // println!("{:?}", rotated);
-            assert_approx_eq!(rotated.x, ZERO, 1.0e-6);
-            assert_approx_eq!(rotated.y, ONE, 1.0e-6);
-            assert_approx_eq!(rotated.z, ZERO, 1.0e-6);
         }
     }
 }
