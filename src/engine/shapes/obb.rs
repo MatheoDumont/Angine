@@ -1,6 +1,6 @@
 use super::{Shape, ShapeType};
 use crate::geometry::{geometry_traits::*, sat::SAT};
-use crate::math::{helper, Mat3, Real, Transform, Vec3, P3, TWO, ZERO};
+use crate::math::{math_essentials::*, Mat3};
 /**
  * Oriented Bounding Box
  */
@@ -23,9 +23,9 @@ impl Shape for OBB {
 
 impl OBB {
     pub fn new(half_side: Vec3, transform: Transform) -> OBB {
-        let xl = half_side.x;
-        let yl = half_side.y;
-        let zl = half_side.z;
+        let xl = half_side.x();
+        let yl = half_side.y();
+        let zl = half_side.z();
 
         OBB {
             half_side,
@@ -91,7 +91,7 @@ impl OBB {
     }
 
     pub fn min(&self) -> P3 {
-        let mut p = P3::from(&self.transform.translation);
+        let mut p = self.transform.translation.clone();
         for i in 0..self.transform.rotation.size().0 {
             let axis = self.transform.rotation.row(i);
             p -= axis * self.half_side[i];
@@ -100,7 +100,7 @@ impl OBB {
     }
     // not sure
     pub fn max(&self) -> P3 {
-        let mut p = P3::from(&self.transform.translation);
+        let mut p = self.transform.translation.clone();
         for i in 0..self.transform.rotation.size().0 {
             let axis = self.transform.rotation.row(i);
             p += axis * self.half_side[i];
@@ -112,12 +112,12 @@ impl OBB {
      * is p inside the OBB
      */
     pub fn is_inside(&self, p: &P3) -> bool {
-        let p_to_obb = p - &P3::from(self.transform.translation);
+        let p_to_obb = p - &self.transform.translation;
         for i in 0..self.transform.rotation.size().0 {
             let axis = self.transform.rotation.row(i);
-            let scalar = axis.dot(&p_to_obb);
+            let scalar = dot(&axis, &p_to_obb);
 
-            if scalar > self.half_side[0] || scalar < -self.half_side[0] {
+            if scalar > self.half_side[i] || scalar < -self.half_side[i] {
                 return false;
             }
         }
@@ -129,12 +129,12 @@ impl OBB {
      * Closest point on the contour of the OBB to p, or inside if p is inside
      */
     pub fn closest_point(&self, p: &P3) -> P3 {
-        let mut new_p = P3::from(&self.transform.translation);
+        let mut new_p = self.transform.translation.clone();
         let p_to_obb = p - &new_p;
 
         for i in 0..self.transform.rotation.size().0 {
             let axis = self.transform.rotation.row(i);
-            let scalar = axis.dot(&p_to_obb);
+            let scalar = dot(&axis, &p_to_obb);
             new_p += axis * helper::clamp(scalar, -self.half_side[i], self.half_side[i]);
         }
 
@@ -142,15 +142,15 @@ impl OBB {
     }
 
     pub fn closest_point_on_contour(&self, p: &P3) -> P3 {
-        let mut new_p = P3::from(&self.transform.translation);
+        let mut new_p = self.transform.translation.clone();
         let p_to_obb = p - &new_p;
         let mut scalars = [ZERO; 3];
         let mut i_max = 0;
-        scalars[i_max] = self.transform.rotation.row(0).dot(&p_to_obb);
+        scalars[i_max] = dot(&self.transform.rotation.row(0), &p_to_obb);
 
         for i in 1..self.transform.rotation.size().0 {
             let axis = self.transform.rotation.row(i);
-            scalars[i] = axis.dot(&p_to_obb);
+            scalars[i] = dot(&axis, &p_to_obb);
 
             if scalars[i].abs() > scalars[i_max].abs() {
                 i_max = i;
@@ -244,7 +244,7 @@ impl PolyhedronTrait for OBB {
 mod tests {
     use super::OBB;
     use crate::geometry::geometry_traits::PolyhedronTrait;
-    use crate::math::{helper, Real, Rotation, Transform, Vec3, ONE, P3, ZERO};
+    use crate::math::{math_essentials::*, Mat3};
     #[test]
     fn OBB_is_inside() {
         // not rotated
@@ -352,7 +352,7 @@ mod tests {
                 Transform::new(
                     Vec3::ones(),
                     Rotation::Z(std::f32::consts::FRAC_PI_4),
-                    Vec3::zero(),
+                    Vec3::zeros(),
                 ),
             );
             let p = obb.closest_point_on_contour(&P3::new(ONE, ZERO, ZERO));
@@ -432,53 +432,52 @@ mod tests {
             assert_eq!(x[2], normal[2]);
         }
     }
-    #[test]
-    fn computed_against_stored_normal() {
-        let obb = OBB::new(
-            Vec3::new(ONE, ONE, ONE),
-            Transform::new(
-                Vec3::ones(),
-                Rotation::composed(
-                    helper::angle_2_rad(30 as Real),
-                    helper::angle_2_rad(-35 as Real),
-                    helper::angle_2_rad(-45 as Real),
-                ),
-                // Vec3::new(1.125 as Real, 0.934 as Real, ZERO),
-                Vec3::zero(),
-            ),
-        );
-        println!(
-            "{:?}",
-            Rotation::composed(
-                helper::angle_2_rad(30 as Real),
-                helper::angle_2_rad(-35 as Real),
-                helper::angle_2_rad(-45 as Real),
-            )
-        );
+    // #[test]
+    // fn computed_against_stored_normal() {
+    //     let obb = OBB::new(
+    //         Vec3::new(ONE, ONE, ONE),
+    //         Transform::new(
+    //             Vec3::ones(),
+    //             Rotation::composed(
+    //                 helper::angle_2_rad(30 as Real),
+    //                 helper::angle_2_rad(-35 as Real),
+    //                 helper::angle_2_rad(-45 as Real),
+    //             ),
+    //             // Vec3::new(1.125 as Real, 0.934 as Real, ZERO),
+    //             Vec3::zeros(),
+    //         ),
+    //     );
+    //     println!(
+    //         "{:?}",
+    //         Rotation::composed(
+    //             helper::angle_2_rad(30 as Real),
+    //             helper::angle_2_rad(-35 as Real),
+    //             helper::angle_2_rad(-45 as Real),
+    //         )
+    //     );
 
-        for i in 0..obb.faces_ref()[0].v_i.len() {
-            let index = obb.faces_ref()[0].v_i[i];
-            println!(
-                "p{:?} = {:?}",
-                obb.faces_ref()[0].v_i[i],
-                obb.transform
-                    .transform_vec(&Vec3::from(obb.local_vertex_ref(index)))
-            );
-        }
-        for i in 0..6 {
-            let computed_normal = obb.computed_face_normal(i);
-            let stored_normal = obb.face_normal(i);
-            println!(
-                "=== i {:?} computed_normal {:?} stored_normal {:?}",
-                i,
-                // helper::vect_angles(&computed_normal),
-                // helper::vect_angles(&stored_normal)
-                computed_normal,
-                stored_normal,
-            );
-            assert_eq!(computed_normal[0], stored_normal[0]);
-            assert_eq!(computed_normal[1], stored_normal[1]);
-            assert_eq!(computed_normal[2], stored_normal[2]);
-        }
-    }
+    //     for i in 0..obb.faces_ref()[0].v_i.len() {
+    //         let index = obb.faces_ref()[0].v_i[i];
+    //         println!(
+    //             "p{:?} = {:?}",
+    //             obb.faces_ref()[0].v_i[i],
+    //             obb.transform.transform_vec(obb.local_vertex_ref(index))
+    //         );
+    //     }
+    //     for i in 0..6 {
+    //         let computed_normal = obb.computed_face_normal(i);
+    //         let stored_normal = obb.face_normal(i);
+    //         println!(
+    //             "=== i {:?} computed_normal {:?} stored_normal {:?}",
+    //             i,
+    //             // helper::vect_angles(&computed_normal),
+    //             // helper::vect_angles(&stored_normal)
+    //             computed_normal,
+    //             stored_normal,
+    //         );
+    //         assert_eq!(computed_normal[0], stored_normal[0]);
+    //         assert_eq!(computed_normal[1], stored_normal[1]);
+    //         assert_eq!(computed_normal[2], stored_normal[2]);
+    //     }
+    // }
 }

@@ -1,5 +1,5 @@
 use super::{Shape, ShapeType};
-use crate::math::{Mat3, Real, Transform, Vec3, P3};
+use crate::math::{math_essentials::*, Mat3};
 
 pub struct Sphere {
     pub radius: Real, // radius in ]0, +inf[ but no check
@@ -15,7 +15,9 @@ impl Sphere {
     }
 
     pub fn closest_point(&self, p: &P3) -> P3 {
-        &self.position + (p - &self.position).normalized() * self.radius
+        let mut d = p - &self.position;
+        normalize(&mut d);
+        self.position + d * self.radius
     }
 }
 

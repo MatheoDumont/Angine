@@ -1,6 +1,5 @@
-use super::{geometry_traits::*, helper};
-use crate::engine::shapes::Plane;
-use crate::math::{Real, Vec3, P3, TWO, ZERO};
+use super::geometry_traits::*;
+use crate::math::math_essentials::*;
 /**
  * Implementation of the Separating Axis Theorem
  */
@@ -46,11 +45,11 @@ pub struct SAT3DResult {
 }
 
 fn project(axis: &Vec3, vertices: &Vec<P3>) -> Projection {
-    let mut min = axis.dot_point(&vertices[0]);
+    let mut min = dot(&axis, &vertices[0]);
     let mut max = min;
 
     for i in 1..vertices.len() {
-        let x = axis.dot_point(&vertices[i]);
+        let x = dot(&axis, &vertices[i]);
         if x > max {
             max = x;
         } else if x < min {
@@ -80,7 +79,7 @@ pub fn sat_2D(
     axis_shape2: &Vec<Vec3>,
 ) -> Option<SAT2DResult> {
     let mut distance = f32::MAX;
-    let mut best_axis = &Vec3::zero();
+    let mut best_axis = &Vec3::zeros();
     let mut idx_best_axis = 0;
 
     // face of A
@@ -143,7 +142,7 @@ pub fn closest_projection_vec(
     let mut closest_point_index = 0;
     for i in 0..to_points.len() {
         let v = &to_points[i] - from_point;
-        let x = normal.dot(&v);
+        let x = dot(&normal, &v);
         if x < smallest_distance {
             smallest_distance = x;
             closest_point_index = i;
@@ -156,7 +155,7 @@ pub fn closest_projection_vec(
 fn face_intersection<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Face {
     let mut best_face = Face {
         distance: f32::MAX,
-        axis: Vec3::zero(),
+        axis: Vec3::zeros(),
         face_index: 0,
     };
     let transformed_vertices_A = shape_A.transformed_vertices();
@@ -201,7 +200,7 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
     // ======================== Normals of A ========================
     let mut best_face_A = Face {
         distance: f32::MAX,
-        axis: Vec3::zero(),
+        axis: Vec3::zeros(),
         face_index: 0,
     };
     for face_index in shape_A.sat_separating_axis() {
@@ -223,7 +222,7 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
     // ======================== Normals of B ========================
     let mut best_face_B = Face {
         distance: f32::MAX,
-        axis: Vec3::zero(),
+        axis: Vec3::zeros(),
         face_index: 0,
     };
     for face_index in shape_B.sat_separating_axis() {
@@ -246,7 +245,7 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
     // ======================== Cross product between edges of A and B ========================
     let mut best_edge = Edge {
         distance: f32::MAX,
-        axis: Vec3::zero(),
+        axis: Vec3::zeros(),
         edge_a_index: 0,
         edge_b_index: 0,
     };
@@ -257,8 +256,8 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
             let direction_edge_A = vertices_A[edge1.vi1] - vertices_A[edge1.vi2];
             let direction_edge_B = vertices_B[edge2.vi1] - vertices_B[edge2.vi2];
 
-            let mut cross = direction_edge_A.cross(&direction_edge_B);
-            let norm = cross.norm();
+            let mut cross = cross(&direction_edge_A, &direction_edge_B);
+            let norm = magnitude(&cross);
 
             if norm == ZERO {
                 continue;
@@ -268,7 +267,7 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
 
             // reoriente la normale pour partir de A
             let r = &vertices_A[edge1.vi1] - &shape_A.transform_ref().position();
-            if cross.dot(&r) < ZERO {
+            if dot(&cross, &r) < ZERO {
                 cross = -cross;
             }
 
@@ -378,7 +377,7 @@ mod test {
             P3::new(3 as Real, 3 as Real, ZERO),
         ];
 
-        let proj = project(&Vec3::right(), &points);
+        let proj = project(&Directions::right(), &points);
         assert_eq!(proj.min, ONE);
         assert_eq!(proj.max, 3 as Real);
     }
@@ -433,7 +432,7 @@ mod test {
                 halfsize: (0.5, 0.5),
             };
             let square2 = Square {
-                transform: Transform::translation(Vec3::right()),
+                transform: Transform::translation(Directions::right()),
                 halfsize: (0.5, 0.5),
             };
 
@@ -447,7 +446,7 @@ mod test {
 
             let sat_unwrapped = sat.unwrap();
             let mut distance;
-            let mut axis = Vec3::zero();
+            let mut axis = Vec3::zeros();
             if sat_unwrapped.face_A.distance < sat_unwrapped.face_B.distance {
                 distance = sat_unwrapped.face_A.distance;
                 axis = sat_unwrapped.face_A.axis;
@@ -458,9 +457,9 @@ mod test {
 
             assert_eq!(distance, ZERO);
 
-            assert_eq!(axis.x, ONE);
-            assert_eq!(axis.y, ZERO);
-            assert_eq!(axis.z, ZERO);
+            assert_eq!(axis.x(), ONE);
+            assert_eq!(axis.y(), ZERO);
+            assert_eq!(axis.z(), ZERO);
         }
         // sat overlapping
         {
@@ -469,7 +468,7 @@ mod test {
                 halfsize: (0.5, 0.5),
             };
             let square2 = Square {
-                transform: Transform::translation(Vec3::right()),
+                transform: Transform::translation(Directions::right()),
                 halfsize: (0.6, 0.5),
             };
 
@@ -482,7 +481,7 @@ mod test {
             assert!(sat.is_some());
             let sat_unwrapped = sat.unwrap();
             let mut distance = ZERO;
-            let mut axis = Vec3::zero();
+            let mut axis = Vec3::zeros();
             if sat_unwrapped.face_A.distance < sat_unwrapped.face_B.distance {
                 distance = sat_unwrapped.face_A.distance;
                 axis = sat_unwrapped.face_A.axis;
@@ -493,9 +492,9 @@ mod test {
 
             assert_approx_eq!(distance, 0.1, 1.0e-6);
 
-            assert_eq!(axis.x, ONE);
-            assert_eq!(axis.y, ZERO);
-            assert_eq!(axis.z, ZERO);
+            assert_eq!(axis.x(), ONE);
+            assert_eq!(axis.y(), ZERO);
+            assert_eq!(axis.z(), ZERO);
         }
 
         // no projection on all axis, no intersection
@@ -529,7 +528,7 @@ mod test {
             let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
             let obb2 = OBB::new(
                 Vec3::new(ONE, ONE, ONE),
-                Transform::translation(Vec3::right() * (3 as Real)),
+                Transform::translation(Directions::right() * (3 as Real)),
             );
 
             let r = sat_3D(&obb1, &obb2);
@@ -544,7 +543,7 @@ mod test {
             );
             let obb2 = OBB::new(
                 Vec3::new(ONE, ONE, ONE),
-                Transform::translation(Vec3::right()),
+                Transform::translation(Directions::right()),
             );
             let r = sat_3D(&obb1, &obb2);
 
@@ -580,7 +579,7 @@ mod test {
             let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
             let obb2 = OBB::new(
                 Vec3::new(ONE, ONE, ONE),
-                Transform::translation(Vec3::right() * (2 as Real)),
+                Transform::translation(Directions::right() * (2 as Real)),
             );
             let r = sat_3D(&obb1, &obb2);
             assert!(r.is_some());

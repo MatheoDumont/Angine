@@ -1,8 +1,9 @@
 use crate::engine::shapes::Sphere;
-use crate::math::{Real, P3};
+use crate::math::math_essentials::*;
 
 pub fn sphere_sphere(sphere_a: &Sphere, sphere_b: &Sphere) -> bool {
-    let distance_a2b = (sphere_a.position - sphere_b.position).norm();
+    let d = sphere_a.position - sphere_b.position;
+    let distance_a2b = magnitude(&d);
     let r = sphere_a.radius + sphere_b.radius >= distance_a2b
         && (sphere_a.radius - sphere_b.radius).abs() < distance_a2b;
     r

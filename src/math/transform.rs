@@ -55,14 +55,14 @@ impl Transform {
     pub fn identity() -> Transform {
         Transform {
             rotation: Mat3::identity(),
-            translation: Vec3::zero(),
+            translation: Vec3::zeros(),
         }
     }
 
     pub fn scaling(scales: Vec3) -> Transform {
         Transform {
             rotation: Mat3::diag(scales),
-            translation: Vec3::zero(),
+            translation: Vec3::zeros(),
         }
     }
 
@@ -76,7 +76,7 @@ impl Transform {
     pub fn rotation(rot: Mat3) -> Transform {
         Transform {
             rotation: rot,
-            translation: Vec3::zero(),
+            translation: Vec3::zeros(),
         }
     }
 

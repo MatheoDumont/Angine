@@ -1,15 +1,17 @@
 use crate::engine::shapes::{Sphere, OBB};
+use crate::math::math_essentials::*;
 
 pub fn obb_sphere(obb: &OBB, sphere: &Sphere) -> bool {
-    (sphere.position - obb.closest_point(&sphere.position)).norm_squared()
-        <= (sphere.radius * sphere.radius)
+    let d = sphere.position - obb.closest_point(&sphere.position);
+    squared_magnitude(&d) <= (sphere.radius * sphere.radius)
 }
 
 #[cfg(test)]
 mod tests {
     use super::obb_sphere;
     use crate::engine::shapes::{Sphere, OBB};
-    use crate::math::{Real, Rotation, Transform, Vec3, ONE, P3, ZERO};
+    use crate::math::math_essentials::*;
+
     #[test]
     fn obb_sphere_intersection() {
         // no intersection

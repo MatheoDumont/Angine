@@ -1,8 +1,9 @@
 use crate::engine::shapes::Plane;
-use crate::math::ONE;
+use crate::math::math_essentials::*;
 
 pub fn plane_plane(pl1: &Plane, pl2: &Plane) -> bool {
-    if pl1.normal.dot(&pl2.normal) == ONE && pl1.distance_from_origin != pl2.distance_from_origin {
+    if dot(&pl1.normal, &pl2.normal) == ONE && pl1.distance_from_origin != pl2.distance_from_origin
+    {
         false
     } else {
         true
@@ -13,12 +14,12 @@ pub fn plane_plane(pl1: &Plane, pl2: &Plane) -> bool {
 mod tests {
     use super::plane_plane;
     use crate::engine::shapes::Plane;
-    use crate::math::{Vec3, ONE, P3, ZERO};
+    use crate::math::math_essentials::*;
     #[test]
     fn plane_plane_intersection() {
         {
-            let pl1 = Plane::new(Vec3::up(), P3::origin());
-            let mut pl2 = Plane::new(Vec3::up(), P3::origin());
+            let pl1 = Plane::new(Directions::up(), P3::origin());
+            let mut pl2 = Plane::new(Directions::up(), P3::origin());
 
             assert_eq!(plane_plane(&pl1, &pl2), true);
 
@@ -27,9 +28,9 @@ mod tests {
         }
 
         {
-            let pl1 = Plane::new(Vec3::up(), P3::origin());
+            let pl1 = Plane::new(Directions::up(), P3::origin());
             let pl2 = Plane::new(
-                Vec3::new(ONE, ONE, ZERO).normalized(),
+                normalized(&Vec3::new(ONE, ONE, ZERO)),
                 P3::new(ZERO, ONE, ZERO),
             );
             assert_eq!(plane_plane(&pl1, &pl2), true);

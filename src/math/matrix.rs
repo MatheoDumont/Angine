@@ -1,4 +1,4 @@
-use super::{Real, Vec3, ONE, P3, ZERO};
+use super::{vector::*, Real, Vec3, Vector3, ONE, P3, ZERO};
 use std::ops::Mul;
 
 /**
@@ -36,7 +36,11 @@ impl Mat3 {
 
     pub fn diag(v: Vec3) -> Mat3 {
         Mat3 {
-            data: [[v.x, ZERO, ZERO], [ZERO, v.y, ZERO], [ZERO, ZERO, v.z]],
+            data: [
+                [v.x(), ZERO, ZERO],
+                [ZERO, v.y(), ZERO],
+                [ZERO, ZERO, v.z()],
+            ],
         }
     }
 
@@ -55,19 +59,11 @@ impl Mat3 {
     }
 
     pub fn col(&self, col: usize) -> Vec3 {
-        Vec3 {
-            x: self.data[0][col],
-            y: self.data[1][col],
-            z: self.data[2][col],
-        }
+        Vec3::new(self.data[0][col], self.data[1][col], self.data[2][col])
     }
 
     pub fn row(&self, row: usize) -> Vec3 {
-        Vec3 {
-            x: self.data[row][0],
-            y: self.data[row][1],
-            z: self.data[row][2],
-        }
+        Vec3::new(self.data[row][0], self.data[row][1], self.data[row][2])
     }
 
     pub fn at(&self, row: usize, col: usize) -> Real {
@@ -103,11 +99,18 @@ impl Mat3 {
         // on opère juste des 'swap' symétriquement le long de la diag
         let mut m = Mat3::identity();
 
-        for r in 0..3 {
-            for c in 0..3 {
-                m.data[r][c] = self.data[c][r];
-            }
-        }
+        m.data[0][0] = self.data[0][0];
+        m.data[1][1] = self.data[1][1];
+        m.data[2][2] = self.data[2][2];
+
+        m.data[1][0] = self.data[0][1];
+        m.data[2][0] = self.data[0][2];
+        m.data[2][1] = self.data[1][2];
+
+        m.data[0][1] = self.data[1][0];
+        m.data[0][2] = self.data[2][0];
+        m.data[1][2] = self.data[2][1];
+
         m
     }
 
@@ -268,50 +271,25 @@ impl Mul for Mat3 {
     }
 }
 
-impl Mul<&Vec3> for &Mat3 {
-    type Output = Vec3;
-    fn mul(self, v: &Vec3) -> Self::Output {
-        Vec3 {
-            x: self.data[0][0] * v.x + self.data[0][1] * v.y + self.data[0][2] * v.z,
-            y: self.data[1][0] * v.x + self.data[1][1] * v.y + self.data[1][2] * v.z,
-            z: self.data[2][0] * v.x + self.data[2][1] * v.y + self.data[2][2] * v.z,
-        }
+impl Mul<&Vector3> for &Mat3 {
+    type Output = Vector3;
+    fn mul(self, v: &Vector3) -> Self::Output {
+        Vector3::new(
+            self.data[0][0] * v.x() + self.data[0][1] * v.y() + self.data[0][2] * v.z(),
+            self.data[1][0] * v.x() + self.data[1][1] * v.y() + self.data[1][2] * v.z(),
+            self.data[2][0] * v.x() + self.data[2][1] * v.y() + self.data[2][2] * v.z(),
+        )
     }
 }
 
-impl Mul<Vec3> for Mat3 {
-    type Output = Vec3;
-    fn mul(self, v: Vec3) -> Self::Output {
-        Vec3 {
-            x: self.data[0][0] * v.x + self.data[0][1] * v.y + self.data[0][2] * v.z,
-            y: self.data[1][0] * v.x + self.data[1][1] * v.y + self.data[1][2] * v.z,
-            z: self.data[2][0] * v.x + self.data[2][1] * v.y + self.data[2][2] * v.z,
-        }
-    }
-}
-
-impl Mul<&P3> for &Mat3 {
-    type Output = P3;
-    fn mul(self, v: &P3) -> Self::Output {
-        P3 {
-            values: [
-                self.data[0][0] * v[0] + self.data[0][1] * v[1] + self.data[0][2] * v[2],
-                self.data[1][0] * v[0] + self.data[1][1] * v[1] + self.data[1][2] * v[2],
-                self.data[2][0] * v[0] + self.data[2][1] * v[1] + self.data[2][2] * v[2],
-            ],
-        }
-    }
-}
-impl Mul<P3> for Mat3 {
-    type Output = P3;
-    fn mul(self, v: P3) -> Self::Output {
-        P3 {
-            values: [
-                self.data[0][0] * v[0] + self.data[0][1] * v[1] + self.data[0][2] * v[2],
-                self.data[1][0] * v[0] + self.data[1][1] * v[1] + self.data[1][2] * v[2],
-                self.data[2][0] * v[0] + self.data[2][1] * v[1] + self.data[2][2] * v[2],
-            ],
-        }
+impl Mul<Vector3> for Mat3 {
+    type Output = Vector3;
+    fn mul(self, v: Vector3) -> Self::Output {
+        Vector3::new(
+            self.data[0][0] * v.x() + self.data[0][1] * v.y() + self.data[0][2] * v.z(),
+            self.data[1][0] * v.x() + self.data[1][1] * v.y() + self.data[1][2] * v.z(),
+            self.data[2][0] * v.x() + self.data[2][1] * v.y() + self.data[2][2] * v.z(),
+        )
     }
 }
 
@@ -381,17 +359,17 @@ mod tests {
         let r_c2 = right.col(2);
 
         let m = &left * &right;
-        assert_eq!(m.at(0, 0), &l_r0 * &r_c0);
-        assert_eq!(m.at(1, 0), &l_r1 * &r_c0);
-        assert_eq!(m.at(2, 0), &l_r2 * &r_c0);
+        assert_eq!(m.at(0, 0), dot(&l_r0, &r_c0));
+        assert_eq!(m.at(1, 0), dot(&l_r1, &r_c0));
+        assert_eq!(m.at(2, 0), dot(&l_r2, &r_c0));
 
-        assert_eq!(m.at(0, 1), &l_r0 * &r_c1);
-        assert_eq!(m.at(1, 1), &l_r1 * &r_c1);
-        assert_eq!(m.at(2, 1), &l_r2 * &r_c1);
+        assert_eq!(m.at(0, 1), dot(&l_r0, &r_c1));
+        assert_eq!(m.at(1, 1), dot(&l_r1, &r_c1));
+        assert_eq!(m.at(2, 1), dot(&l_r2, &r_c1));
 
-        assert_eq!(m.at(0, 2), &l_r0 * &r_c2);
-        assert_eq!(m.at(1, 2), &l_r1 * &r_c2);
-        assert_eq!(m.at(2, 2), &l_r2 * &r_c2);
+        assert_eq!(m.at(0, 2), dot(&l_r0, &r_c2));
+        assert_eq!(m.at(1, 2), dot(&l_r1, &r_c2));
+        assert_eq!(m.at(2, 2), dot(&l_r2, &r_c2));
     }
 
     #[test]
@@ -401,9 +379,9 @@ mod tests {
         let right = Vec3::new(ONE, ONE, ONE);
         let r = left * right;
 
-        assert_eq!(r.x, 6 as Real);
-        assert_eq!(r.y, 15 as Real);
-        assert_eq!(r.z, 24 as Real);
+        assert_eq!(r.x(), 6 as Real);
+        assert_eq!(r.y(), 15 as Real);
+        assert_eq!(r.z(), 24 as Real);
     }
     #[test]
     fn matrix_transpose() {

@@ -1,14 +1,14 @@
 use super::ContactManifold;
 
 use crate::engine::shapes::Sphere;
-use crate::math::{Real, Vec3, P3};
+use crate::math::{vector::*, Real, Vec3, P3};
 
 pub fn sphere_sphere(s1: &Sphere, s2: &Sphere) -> ContactManifold {
     let a2b = &s2.position - &s1.position;
-    let l = a2b.norm();
+    let l = magnitude(&a2b);
     let penetration_distance = (l - s1.radius - s2.radius).abs() / (2 as Real);
     let n = a2b / l;
-    let p = P3::from(n * (s1.radius - penetration_distance));
+    let p = n * (s1.radius - penetration_distance);
 
     ContactManifold {
         points: vec![p],
@@ -30,6 +30,6 @@ mod test {
 
         assert_eq!(cm.penetration_distance, 0.25);
         assert_eq!(cm.points[0][0], 1.75);
-        assert_eq!(cm.normal_a_to_b.x, ONE);
+        assert_eq!(cm.normal_a_to_b.x(), ONE);
     }
 }

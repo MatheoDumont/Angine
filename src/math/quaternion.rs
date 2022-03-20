@@ -1,4 +1,4 @@
-use super::{helper, Mat3, Real, Vec3, ONE, TWO, ZERO};
+use super::{helper, Directions, Mat3, Real, Vec3, ONE, TWO, ZERO};
 use std::ops::{Div, Mul};
 
 /**
@@ -50,9 +50,9 @@ impl Quaternion {
      * x degrees around the x axis, and y degrees around the y axis (in that order).
      */
     pub fn from_euler_angles(x: Real, y: Real, z: Real) -> Quaternion {
-        Quaternion::from_rad_axis(helper::angle_2_rad(y), Vec3::up())
-            * Quaternion::from_rad_axis(helper::angle_2_rad(x), Vec3::right())
-            * Quaternion::from_rad_axis(helper::angle_2_rad(z), Vec3::forward())
+        Quaternion::from_rad_axis(helper::angle_2_rad(y), Directions::up())
+            * Quaternion::from_rad_axis(helper::angle_2_rad(x), Directions::right())
+            * Quaternion::from_rad_axis(helper::angle_2_rad(z), Directions::forward())
         // yaw = z, pitch = y, roll = x
         // let rad1 = x * 0.5;
         // let rad2 = y * 0.5;
@@ -84,9 +84,9 @@ impl Quaternion {
     }
 
     pub fn from_euler_rads(x_rad: Real, y_rad: Real, z_rad: Real) -> Quaternion {
-        Quaternion::from_rad_axis(x_rad, Vec3::right())
-            * (Quaternion::from_rad_axis(y_rad, Vec3::up())
-                * Quaternion::from_rad_axis(z_rad, Vec3::forward()))
+        Quaternion::from_rad_axis(x_rad, Directions::right())
+            * (Quaternion::from_rad_axis(y_rad, Directions::up())
+                * Quaternion::from_rad_axis(z_rad, Directions::forward()))
     }
 
     /**

@@ -32,9 +32,9 @@ impl RotationMatrix {
         let c = rad.cos();
         let s = rad.sin();
         let t = ONE - c;
-        let x = normalized_axis.x;
-        let y = normalized_axis.y;
-        let z = normalized_axis.z;
+        let x = normalized_axis.x();
+        let y = normalized_axis.y();
+        let z = normalized_axis.z();
 
         let op1 = t * x * y + s * z;
         let op2 = t * x * z + s * y;
@@ -61,27 +61,27 @@ mod tests {
             let v = Vec3::new(ONE, ZERO, ZERO);
             let rotated = RotationMatrix::Z(rad) * v;
             // println!("{:?}", rotated);
-            assert_approx_eq!(rotated.x, ZERO, 1.0e-6);
-            assert_approx_eq!(rotated.y, ONE, 1.0e-6);
-            assert_approx_eq!(rotated.z, ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.x(), ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.y(), ONE, 1.0e-6);
+            assert_approx_eq!(rotated.z(), ZERO, 1.0e-6);
         }
         // Y rotation
         {
             let v = Vec3::new(ZERO, ZERO, ONE);
             let rotated = RotationMatrix::Y(rad) * v;
             // println!("{:?}", rotated);
-            assert_approx_eq!(rotated.x, ONE, 1.0e-6);
-            assert_approx_eq!(rotated.y, ZERO, 1.0e-6);
-            assert_approx_eq!(rotated.z, ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.x(), ONE, 1.0e-6);
+            assert_approx_eq!(rotated.y(), ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.z(), ZERO, 1.0e-6);
         }
         // X rotation
         {
             let v = Vec3::new(ZERO, ONE, ZERO);
             let rotated = RotationMatrix::X(rad) * v;
             // println!("{:?}", rotated);
-            assert_approx_eq!(rotated.x, ZERO, 1.0e-6);
-            assert_approx_eq!(rotated.y, ZERO, 1.0e-6);
-            assert_approx_eq!(rotated.z, ONE, 1.0e-6);
+            assert_approx_eq!(rotated.x(), ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.y(), ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.z(), ONE, 1.0e-6);
         }
 
         // composed
@@ -89,9 +89,9 @@ mod tests {
             let v = Vec3::new(ONE, ZERO, ZERO);
             let rotated = RotationMatrix::composed(rad, rad, rad) * v;
             // println!("{:?}", rotated);
-            assert_approx_eq!(rotated.x, -ONE, 1.0e-6);
-            assert_approx_eq!(rotated.y, ZERO, 1.0e-6);
-            assert_approx_eq!(rotated.z, ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.x(), -ONE, 1.0e-6);
+            assert_approx_eq!(rotated.y(), ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.z(), ZERO, 1.0e-6);
         }
 
         // axis angle
@@ -100,9 +100,9 @@ mod tests {
             let v = Vec3::new(ONE, ZERO, ZERO);
             let rotated = RotationMatrix::axis_angle(z_axis, rad) * v;
             // println!("{:?}", rotated);
-            assert_approx_eq!(rotated.x, ZERO, 1.0e-6);
-            assert_approx_eq!(rotated.y, ONE, 1.0e-6);
-            assert_approx_eq!(rotated.z, ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.x(), ZERO, 1.0e-6);
+            assert_approx_eq!(rotated.y(), ONE, 1.0e-6);
+            assert_approx_eq!(rotated.z(), ZERO, 1.0e-6);
         }
     }
 }

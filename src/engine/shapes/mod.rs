@@ -6,7 +6,7 @@ pub use obb::OBB;
 pub use plane::Plane;
 pub use sphere::Sphere;
 
-use crate::math::{Mat3, Real, Transform, Vec3, P3};
+use crate::math::{math_essentials::*, Mat3};
 use downcast_rs::DowncastSync;
 
 #[derive(Copy, Clone)]

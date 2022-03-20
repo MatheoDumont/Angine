@@ -1,4 +1,4 @@
-use crate::math::{Mat3, Transform, Vec3, P3};
+use crate::math::{math_essentials::*, Mat3};
 
 pub struct EdgeIndex {
     // vertex index
@@ -57,16 +57,23 @@ pub trait PolyhedronTrait {
     fn computed_face_normal(&self, face_index: usize) -> Vec3 {
         let face_indices = &self.faces_ref()[face_index];
         let rotation = self.transform_ref().rotation;
-        let p0 = P3::from(rotation * Vec3::from(self.local_vertex_ref(face_indices.v_i[0])));
-        let p1 = P3::from(rotation * Vec3::from(self.local_vertex_ref(face_indices.v_i[1])));
-        let p2 = P3::from(rotation * Vec3::from(self.local_vertex_ref(face_indices.v_i[2])));
 
-        let mut normal = (p2 - p1).cross(&(p0 - p1));
-        normal.normalize();
+        let p0 = self
+            .transform_ref()
+            .transform_vec(self.local_vertex_ref(face_indices.v_i[0]));
+        let p1 = self
+            .transform_ref()
+            .transform_vec(self.local_vertex_ref(face_indices.v_i[1]));
+        let p2 = self
+            .transform_ref()
+            .transform_vec(self.local_vertex_ref(face_indices.v_i[2]));
+        let d1 = p2 - p1;
+        let d2 = p0 - p1;
+        let mut normal = cross(&d1, &d2);
+        normalize(&mut normal);
 
         // reoriente la normale pour partir de A
-
-        if normal.dot(&Vec3::from(p0)) < 0.0 {
+        if dot(&normal, &p0) < 0.0 {
             normal = -normal;
         }
         normal
@@ -77,7 +84,9 @@ pub trait PolyhedronTrait {
         let edge = &self.edges_ref()[edge_idx];
         // let v = self.local_vertex_ref(edge.vi2) - self.local_vertex_ref(edge.vi1);
         // self.transform_ref().transform_vec(&v)
-        (self.transformed_vertex(edge.vi2) - self.transformed_vertex(edge.vi1)).normalized()
+        let mut d = self.transformed_vertex(edge.vi2) - self.transformed_vertex(edge.vi1);
+        normalize(&mut d);
+        d
     }
     // the separating axis and his index in the normals
     fn sat_separating_axis(&self) -> Vec<usize>;

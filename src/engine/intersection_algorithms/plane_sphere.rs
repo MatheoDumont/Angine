@@ -1,5 +1,5 @@
 use crate::engine::shapes::{Plane, Sphere};
-use crate::math::{Vec3, P3};
+use crate::math::math_essentials::*;
 
 pub fn plane_sphere(plane: &Plane, sphere: &Sphere) -> bool {
     if plane.signed_distance(&sphere.position).abs() <= sphere.radius {
@@ -13,27 +13,27 @@ pub fn plane_sphere(plane: &Plane, sphere: &Sphere) -> bool {
 mod tests {
     use super::plane_sphere;
     use crate::engine::shapes::{Plane, Sphere};
-    use crate::math::{Real, Vec3, ONE, P3, ZERO};
+    use crate::math::math_essentials::*;
     #[test]
     fn plane_sphere_intersection() {
         // no intersection
         {
             let s = Sphere::new(ONE, P3::new(ZERO, 2 as Real, ZERO));
-            let pl = Plane::new(Vec3::up(), P3::origin());
+            let pl = Plane::new(Directions::up(), P3::origin());
 
             assert_eq!(plane_sphere(&pl, &s), false);
         }
         // intersection
         {
             let s = Sphere::new(ONE, P3::new(ZERO, ONE, ZERO));
-            let pl = Plane::new(Vec3::up(), P3::origin());
+            let pl = Plane::new(Directions::up(), P3::origin());
 
             assert_eq!(plane_sphere(&pl, &s), true);
         }
 
         {
             let s = Sphere::new(ONE, P3::new(ZERO, -ONE, ZERO));
-            let pl = Plane::new(Vec3::up(), P3::origin());
+            let pl = Plane::new(Directions::up(), P3::origin());
 
             assert_eq!(plane_sphere(&pl, &s), true);
         }
