@@ -33,6 +33,8 @@ Cette technique est utilisée pour rester temps réel.
 
 - Après une broadphase, calcul le temps exact de collision en se basant sur la vitesse linéaire et angulaire des objets.
 
+- Aide pour SAT et calculer les points d'intersections sur les formes primitives [ici](https://steamcdn-a.akamaihd.net/apps/valve/2015/DirkGregorius_Contacts.pdf)
+- Clipping sur obb en 2D [ici](https://dyn4j.org/2011/11/contact-points-using-clipping/#cpg-alt)
 ### Aide
 
 - [Application](https://sumo.app/3d/?lang=en) web de visualisation 3D
