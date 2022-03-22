@@ -177,18 +177,6 @@ impl PolyhedronTrait for OBB {
         }
     }
 
-    // fn sizes(&self) -> PolyhedronSizes;
-    // fn local_vertices_ref(&self) -> &Vec<P3>;
-    // fn local_vertex_ref(&self, vertex_idx: usize) -> &P3;
-    // fn transformed_vertices(&self) -> Vec<P3>;
-    // fn transformed_vertex(&self, vertex_idx: usize) -> P3;
-    // // an edge is as the indices of the two points, from vertices()
-    // fn edges_ref(&self) -> &Vec<EdgeIndex>;
-    // // a face is described as a Vec of vertex index, the order is trigonometric
-    // fn faces_ref(&self) -> &Vec<FaceIndex>;
-    // // face_index is an index of the Vec<Faces> returned by faces()
-    // fn face_normal_ref(&self, face_index: usize) -> &Vec3;
-    // fn transform_ref(&self) -> Transform;
     fn local_vertices_ref(&self) -> &Vec<P3> {
         &self.vertices
     }
@@ -210,15 +198,6 @@ impl PolyhedronTrait for OBB {
         let n = self.transform.rotation.row((face - modulo) / 2);
         n - n * TWO * (modulo as Real) // if face is odd, then the normal is flipped, otherwise nothing
 
-        // match face {
-        //     0 => self.transform.rotation.row(0),
-        //     1 => -self.transform.rotation.row(0),
-        //     2 => self.transform.rotation.row(1),
-        //     3 => -self.transform.rotation.row(1),
-        //     4 => self.transform.rotation.row(2),
-        //     5 => -self.transform.rotation.row(2),
-        //     _ => panic!(),
-        // }
         // understandable version
         // if face % 2 == 0 {
         //     self.transform.rotation.row(face / 2)
@@ -230,12 +209,6 @@ impl PolyhedronTrait for OBB {
         &self.transform
     }
     fn sat_separating_axis(&self) -> Vec<usize> {
-        // vec![
-        //     (self.transform_ref().rotation.row(0), 0),
-        //     (self.transform_ref().rotation.row(1), 2),
-        //     (self.transform_ref().rotation.row(2), 4),
-        // ]
-
         vec![0, 2, 4]
     }
 }

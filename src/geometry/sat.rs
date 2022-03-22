@@ -13,25 +13,23 @@ pub struct Projection {
     max: Real,
 }
 
-// distance, which face of the shape, the axis
+// distance, which face of the shape, the axis that leaves the face
 #[derive(Debug)]
 pub struct Face {
-    distance: Real,
-    axis: Vec3,
-    face_index: usize,
+    pub distance: Real,
+    pub axis: Vec3,
+    pub face_index: usize,
 }
-// distance, edge of A, edge of B, the axis
+// distance, edge of A, edge of B, the axis always leaves A
 #[derive(Debug)]
 pub struct Edge {
-    distance: Real,
-    axis: Vec3,
-    edge_a_index: usize,
-    edge_b_index: usize,
+    pub distance: Real,
+    pub axis: Vec3,
+    pub edge_a_index: usize,
+    pub edge_b_index: usize,
 }
 
 pub struct SAT2DResult {
-    // pub minimum_translation: Real,
-    // pub minimum_axis: Vec3,
     pub face_A: Face,
     pub face_B: Face,
 }
@@ -133,67 +131,7 @@ pub fn sat_2D(
     Some(SAT2DResult { face_A, face_B })
 }
 
-pub fn closest_projection_vec(
-    normal: &Vec3,
-    to_points: &Vec<P3>,
-    from_point: &P3,
-) -> (Real, usize) {
-    let mut smallest_distance = f32::MAX;
-    let mut closest_point_index = 0;
-    for i in 0..to_points.len() {
-        let v = &to_points[i] - from_point;
-        let x = dot(&normal, &v);
-        if x < smallest_distance {
-            smallest_distance = x;
-            closest_point_index = i;
-        }
-    }
-
-    (smallest_distance, closest_point_index)
-}
-
-fn face_intersection<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Face {
-    let mut best_face = Face {
-        distance: f32::MAX,
-        axis: Vec3::zeros(),
-        face_index: 0,
-    };
-    let transformed_vertices_A = shape_A.transformed_vertices();
-    let transformed_vertices_B = shape_B.transformed_vertices();
-
-    for face_index in 0..shape_A.sizes().faces {
-        // point on the plane
-        let face_indices = &shape_A.faces_ref()[face_index];
-        let point_on_face = transformed_vertices_A[face_indices.v_i[0]];
-        let normal = shape_A.face_normal(face_index);
-
-        // closest point to the normal
-        let result = closest_projection_vec(&normal, &transformed_vertices_B, &point_on_face);
-
-        // if result.0 > ZERO {
-        //     println!(
-        //         "face_index:{:?} normal:{:?} norm:{:?} transformed_vertices_B:{:?} distance:{:?} ",
-        //         face_index,
-        //         normal,
-        //         normal.norm(),
-        //         transformed_vertices_B[result.1],
-        //         result.0
-        //     );
-        //     return best_face;
-        // }
-
-        if result.0 < best_face.distance {
-            best_face.distance = result.0;
-            best_face.axis = normal;
-            best_face.face_index = face_index;
-        }
-    }
-
-    best_face
-}
-
 pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResult> {
-    println!("=====================================================");
     let vertices_A = shape_A.transformed_vertices();
     let vertices_B = shape_B.transformed_vertices();
 

@@ -50,64 +50,80 @@ impl Quaternion {
      * x degrees around the x axis, and y degrees around the y axis (in that order).
      */
     pub fn from_euler_angles(x: Real, y: Real, z: Real) -> Quaternion {
-        Quaternion::from_rad_axis(helper::angle_2_rad(y), Directions::up())
-            * Quaternion::from_rad_axis(helper::angle_2_rad(x), Directions::right())
-            * Quaternion::from_rad_axis(helper::angle_2_rad(z), Directions::forward())
-        // yaw = z, pitch = y, roll = x
-        // let rad1 = x * 0.5;
-        // let rad2 = y * 0.5;
-        // let rad3 = z * 0.5;
-
-        // let c1 = rad1.cos();
-        // let s1 = rad1.sin();
-        // let c2 = rad2.cos();
-        // let s2 = rad2.sin();
-        // let c3 = rad3.cos();
-        // let s3 = rad3.sin();
-
-        // // Quaternion {
-        // //     w: c1 * c2 * c3 - s1 * s2 * s3,
-        // //     x: c1 * s2 * s3 + s1 * c2 * c3,
-        // //     y: c1 * s2 * c3 - s1 * c2 * s3,
-        // //     z: c1 * c2 * s3 + s1 * s2 * c3,
-        // // }
-        // let c1c2 = c1 * c2;
-        // let s1s2 = s1 * s2;
-        // let c1s2 = c1 * s2;
-        // let s1c2 = s1 * c2;
-        // Quaternion {
-        //     w: c1c2 * c3 - s1s2 * s3,
-        //     x: c1s2 * s3 + s1c2 * c3,
-        //     y: c1s2 * c3 - s1c2 * s3,
-        //     z: c1c2 * s3 + s1s2 * c3,
-        // }
-    }
-
-    pub fn from_euler_rads(x_rad: Real, y_rad: Real, z_rad: Real) -> Quaternion {
-        Quaternion::from_rad_axis(x_rad, Directions::right())
-            * (Quaternion::from_rad_axis(y_rad, Directions::up())
-                * Quaternion::from_rad_axis(z_rad, Directions::forward()))
+        Quaternion::from_euler_rads(
+            helper::angle_2_rad(x),
+            helper::angle_2_rad(y),
+            helper::angle_2_rad(z),
+        )
     }
 
     /**
-     * source: https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm
-     * 18 multiplications, 12 addition/soustractions = 30 opérations
+     * https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+     */
+    pub fn from_euler_rads(x_rad: Real, y_rad: Real, z_rad: Real) -> Quaternion {
+        // Quaternion::from_rad_axis(y_rad, Directions::up())
+        //     * Quaternion::from_rad_axis(x_rad, Directions::right())
+        //     * Quaternion::from_rad_axis(z_rad, Directions::forward())
+        // moins couteux et équivalent a la formule au dessus
+        let rad1 = x_rad * 0.5;
+        let rad2 = y_rad * 0.5;
+        let rad3 = z_rad * 0.5;
+
+        let c1 = rad1.cos();
+        let s1 = rad1.sin();
+        let c2 = rad2.cos();
+        let s2 = rad2.sin();
+        let c3 = rad3.cos();
+        let s3 = rad3.sin();
+
+        Quaternion {
+            w: c1 * c3 * c2 + s2 * s1 * s3,
+            x: c2 * s1 * c3 + s2 * c1 * s3,
+            y: -c2 * s1 * s3 + s2 * c1 * c3,
+            z: c2 * c1 * s3 - s2 * s1 * c3,
+        }
+    }
+
+    /**
+     * source pour la méthode utilisée: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+     * 16 multiplications + 15 addition/soustractions = 31 opérations
+     * retourne la matrice homogène du quaternion associé
      */
     pub fn to_mat3(&self) -> Mat3 {
-        let xx2 = TWO * self.x * self.x;
-        let yy2 = TWO * self.y * self.y;
-        let zz2 = TWO * self.z * self.z;
-        let xy2 = TWO * self.x * self.y;
-        let zw2 = TWO * self.z * self.w;
-        let xz2 = TWO * self.x * self.z;
-        let yw2 = TWO * self.y * self.w;
-        let yz2 = TWO * self.y * self.z;
-        let xw2 = TWO * self.x * self.w;
+        // https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm
+        // 18 multiplications, 12 addition/soustractions = 30 opérations
+        // let xx2 = TWO * self.x * self.x;
+        // let yy2 = TWO * self.y * self.y;
+        // let zz2 = TWO * self.z * self.z;
+        // let xy2 = TWO * self.x * self.y;
+        // let zw2 = TWO * self.z * self.w;
+        // let xz2 = TWO * self.x * self.z;
+        // let yw2 = TWO * self.y * self.w;
+        // let yz2 = TWO * self.y * self.z;
+        // let xw2 = TWO * self.x * self.w;
+
+        // Mat3::from_array([
+        //     [ONE - yy2 - zz2, xy2 - zw2, xz2 + yw2],
+        //     [xy2 + zw2, ONE - xx2 - zz2, yz2 - xw2],
+        //     [xz2 - yw2, yz2 + xw2, ONE - xx2 - yy2],
+        // ])
+
+        // 16 *, 15 +/- = 31
+        let ww = self.w * self.w;
+        let xx = self.x * self.x;
+        let yy = self.y * self.y;
+        let zz = self.z * self.z;
+        let xy = self.x * self.y;
+        let wz = self.w * self.z;
+        let wy = self.w * self.y;
+        let xz = self.x * self.z;
+        let yz = self.y * self.z;
+        let wx = self.w * self.x;
 
         Mat3::from_array([
-            [ONE - yy2 - zz2, xy2 - zw2, xz2 + yw2],
-            [xy2 + zw2, ONE - xx2 - zz2, yz2 - xw2],
-            [xz2 - yw2, yz2 + xw2, ONE - xx2 - yy2],
+            [ww + xx - yy - zz, TWO * (xy - wz), TWO * (wy + xz)],
+            [TWO * (xy + wz), ww - xx + yy - zz, TWO * (yz - wx)],
+            [TWO * (xz - wy), TWO * (wx + yz), ww - xx - yy + zz],
         ])
     }
 
@@ -183,11 +199,11 @@ impl Div<Real> for Quaternion {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::math::RotationMatrix;
+    use crate::math::math_essentials::*;
     use assert_approx_eq::assert_approx_eq;
 
     #[test]
-    fn test_vec_mat_from_quat() {
+    fn quaternion_rotation() {
         // rot around Z
         {
             let q = Quaternion::from_euler_rads(
@@ -258,20 +274,32 @@ mod tests {
 
         // }
     }
+
     #[test]
-    fn test_diff_rotation_and_quat() {
+    fn quat_to_matrices() {
+        let x_angle = -30.0;
+        let y_angle = 35.0;
+        let z_angle = 45.0;
+        let v = Vector3::new(0.5, 0.6, 0.7);
+
+        // z then y
+        let q = Quaternion::from_euler_angles(x_angle, y_angle, z_angle);
+        let m = q.to_mat3();
+
+        assert_approx_eq!(q.rotate(&v)[0], (m * v)[0]);
+        assert_approx_eq!(q.rotate(&v)[1], (m * v)[1]);
+        assert_approx_eq!(q.rotate(&v)[2], (m * v)[2]);
+    }
+
+    #[test]
+    fn quat_composed_rotation_order_to_unity() {
         let x_angle = -30.0;
         let y_angle = 35.0;
         let z_angle = 45.0;
 
-        let v = Vec3::new(ONE, ONE, ONE);
-        let m = RotationMatrix::composed(
-            helper::angle_2_rad(x_angle),
-            helper::angle_2_rad(y_angle),
-            helper::angle_2_rad(z_angle),
-        );
         // z then y
         let q = Quaternion::from_euler_angles(x_angle, y_angle, z_angle);
+        // quaternion de Unity avec les memes angles x y z
         // let q = Quaternion {
         //     w: 0.8213125,
         //     x: -0.1168965,
@@ -279,23 +307,11 @@ mod tests {
         //     z: 0.4244396,
         // };
 
-        println!("norm of q {:?}, q: {:?} ", q.norm(), q);
-        // y then z
-        // let qq = Quaternion::from_rad_axis(helper::angle_2_rad(z_angle), Vec3::forward())
-        //     * Quaternion::from_rad_axis(helper::angle_2_rad(y_angle), Vec3::up())
-        //     * Quaternion::from_rad_axis(helper::angle_2_rad(z_angle), Vec3::right());
-        // println!("norm of q {:?}, q: {:?} ", qq.norm(), qq);
-        // let qqq = Quaternion::from_rad_axis(helper::angle_2_rad(y_angle), Vec3::up())
-        //     * Quaternion::from_rad_axis(helper::angle_2_rad(x_angle), Vec3::right())
-        //     * Quaternion::from_rad_axis(helper::angle_2_rad(z_angle), Vec3::forward());
-        // println!("norm of q {:?}, q: {:?} ", qqq.norm(), qqq);
+        // println!("norm of q {:?}, q: {:?} ", q.norm(), q);
 
-        println!("quat:{:?}", q.rotate(&v));
-        println!("matrix from quat:{:?}", q.to_mat3() * v);
-        println!("RotationMatrix:{:?}", m * v);
-
-        // assert_approx_eq!(r[0], ZERO);
-        // assert_approx_eq!(r[1], 0.7071067);
-        // assert_approx_eq!(r[2], 0.7071067);
+        assert_approx_eq!(0.8213125, q.w);
+        assert_approx_eq!(-0.1168965, q.x);
+        assert_approx_eq!(0.3628112, q.y);
+        assert_approx_eq!(0.4244396, q.z);
     }
 }
