@@ -5,7 +5,18 @@ Implementation of a Physics engine in Rust with basic physics simulation and col
 A good take of intersection and some math comes from [*The game physic cookbook*](https://gamephysicscookbook.com/), but i didn't exactly followed it.
 
 - Row majored matrix
-- [Left-handed coordinate system](https://www.evl.uic.edu/ralph/508S98/coordinates.html)
+- [Left-handed coordinate system](https://www.evl.uic.edu/ralph/508S98/coordinates.html)  
+![left_hand_coord_system](https://user-images.githubusercontent.com/29271028/159712557-554fbb55-8b8e-41b9-852a-567de70e4713.png)  
+So the rotation order is clockwise,
+```
+rotation::z_axis(90 degrees) * vec::up = vec::left (-vec::right)
+```
+as well for the cross product orientation result:
+```
+cross(right, up) = forward
+cross(forward, right) = up
+cross(up, forward) = right
+```
 ### Method of Separating Axis 
 - [Paper explanation, 2D & 3D exemple + computation of collision time using the Method](https://www.geometrictools.com/Documentation/MethodOfSeparatingAxes.pdf) or in the doc folder [here](doc/MethodOfSeparatingAxes.pdf)
 - The way of implementing the SAT follow this [post](https://dyn4j.org/2010/01/sat/#sat-projshape)
@@ -16,6 +27,7 @@ A good take of intersection and some math comes from [*The game physic cookbook*
 - compréhension globale - euclidean space [ici](https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/transforms/index.htm)
 - l'article de wikipédia [ici](https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles)
 - pour la conversion Quaternion/Matrix [ici](https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm)
+
 
 
 ### Collisions
