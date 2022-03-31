@@ -90,4 +90,6 @@ pub trait PolyhedronTrait {
     }
     // the separating axis and his index in the normals
     fn sat_separating_axis(&self) -> Vec<usize>;
+
+    fn adjacent_faces(&self, face_index: usize) -> Vec<usize>;
 }

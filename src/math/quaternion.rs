@@ -136,17 +136,18 @@ impl Quaternion {
         }
     }
 
-    pub fn squared_norm(&self) -> Real {
+    pub fn squared_magnitude(&self) -> Real {
         self.w * self.w + self.x * self.x + self.y * self.y + self.z * self.z
     }
 
-    pub fn norm(&self) -> Real {
-        self.squared_norm().sqrt()
+    pub fn magnitude(&self) -> Real {
+        self.squared_magnitude().sqrt()
     }
 
     pub fn inverse(&self) -> Quaternion {
-        self.conjugate() / self.squared_norm()
+        self.conjugate() / self.squared_magnitude()
     }
+
     /**
      * 56 opérations pour rotate un vec
      */
@@ -307,7 +308,7 @@ mod tests {
         //     z: 0.4244396,
         // };
 
-        // println!("norm of q {:?}, q: {:?} ", q.norm(), q);
+        // println!("magnitude of q {:?}, q: {:?} ", q.magnitude(), q);
 
         assert_approx_eq!(0.8213125, q.w);
         assert_approx_eq!(-0.1168965, q.x);

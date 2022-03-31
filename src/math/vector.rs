@@ -46,10 +46,6 @@ impl Vector3 {
     }
 }
 
-pub fn squared_magnitude_r(v: Vector3) -> Real {
-    v[0].powi(2) + v[1].powi(2) + v[2].powi(2)
-}
-
 pub fn squared_magnitude(v: &Vector3) -> Real {
     v[0].powi(2) + v[1].powi(2) + v[2].powi(2)
 }
@@ -331,5 +327,30 @@ mod tests {
         let vv = Vector3::new(0.5, 0.4, 0.6);
 
         assert_eq!(dot(&v, &vv), 0.5 + 0.8 + 1.8);
+    }
+
+    #[test]
+    fn test_orientation_cross_product_vec() {
+        // since we're using a left hand coordinate system
+        {
+            let r = cross(&Directions::up(), &Directions::forward());
+            assert_eq!(r.x(), ONE);
+            assert_eq!(r.y(), ZERO);
+            assert_eq!(r.z(), ZERO);
+        }
+
+        {
+            let r = cross(&Directions::forward(), &Directions::right());
+            assert_eq!(r.x(), ZERO);
+            assert_eq!(r.y(), ONE);
+            assert_eq!(r.z(), ZERO);
+        }
+
+        {
+            let r = cross(&Directions::right(), &Directions::up());
+            assert_eq!(r.x(), ZERO);
+            assert_eq!(r.y(), ZERO);
+            assert_eq!(r.z(), ONE);
+        }
     }
 }

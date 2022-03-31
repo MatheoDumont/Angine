@@ -211,6 +211,17 @@ impl PolyhedronTrait for OBB {
     fn sat_separating_axis(&self) -> Vec<usize> {
         vec![0, 2, 4]
     }
+    fn adjacent_faces(&self, face_index: usize) -> Vec<usize> {
+        match face_index {
+            0 => vec![3, 4, 2, 5],
+            1 => vec![3, 5, 2, 4],
+            2 => vec![5, 0, 4, 1],
+            3 => vec![5, 1, 4, 0],
+            4 => vec![2, 0, 3, 1],
+            5 => vec![3, 0, 2, 1],
+            _ => panic!("shapes::obb:adjacent_faces() === face_index should be between 0 and 5 !"),
+        }
+    }
 }
 
 #[cfg(test)]

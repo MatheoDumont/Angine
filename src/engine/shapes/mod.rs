@@ -1,19 +1,22 @@
+pub mod line;
 pub mod obb;
 pub mod plane;
 pub mod sphere;
 
+use crate::math::{math_essentials::*, Mat3};
+use downcast_rs::DowncastSync;
+
+pub use line::Line;
 pub use obb::OBB;
 pub use plane::Plane;
 pub use sphere::Sphere;
-
-use crate::math::{math_essentials::*, Mat3};
-use downcast_rs::DowncastSync;
 
 #[derive(Copy, Clone)]
 pub enum ShapeType {
     Sphere = 0,
     OBB = 1,
     Plane = 2,
+    Line = 3,
 }
 
 pub trait Shape: DowncastSync {
