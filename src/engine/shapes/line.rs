@@ -6,105 +6,129 @@ pub struct Line {
 }
 
 impl Line {
-    // pub fn closest_points(&self) -> [P3; 2] {
-    //     []
-    // }
+    pub fn point_on_line(&self, p: P3) -> bool {
+        let ap = normalized(&(p - self.a));
+        let ab = normalized(&(self.b - self.a));
+        let d_rounded = helper::round_n_decimal(dot(&ap, &ab), 6);
+        d_rounded.abs() == ONE
+    }
 
     /**
-     * source:
-     * http://math.15873.pagesperso-orange.fr/page10.htm
-     * Pour que 2 lignes s'intersectent, elles doivent etre coplanaire (cad sur le meme plan)
-     * et non parallèle.
-     * On ne test ni la propriété coplanaire ni parallèle => les deux droites sont supposés etre coplanaire et non parallèle.
+     * Retourne le point sur chaque droite le plus proche de l'autre, donc 2 points en tout.
+     * Si les 2 points sont les mêmes, alors les 2 droites s'intersectent.
+     * C'est ce que fait la fonction intersect().
      *
-     * elles sont coplanaire si elles sont parallèles ou sécantes (https://fr.wikipedia.org/wiki/Coplanaire)
-     * elles sont parallele si cross(self.b - self.a, o.b - o.a) = 0
-     * elles sont sécantes si (b1 - b2)*(k1 - k2) == (d1 - d2)*(a1 - a2) (http://math.15873.pagesperso-orange.fr/page10.htm)
+     * source: https://math.stackexchange.com/questions/846054/closest-points-on-two-line-segments/883210#883210
+     *
+     * On définit les droites comme :
+     * L1(s) = p1 + s(p2 - p1)
+     * L2(t) = p3 + t(p4 - p3)
+     *
+     * et on pose les équations :
+     * (1) (L1(s) - L2(t)) . (p2 - p1) = 0
+     * (2) (L1(s) - L2(t)) . (p4 - p3) = 0
+     *
+     * qui signifient que la droite avec comme points directeurs L1(s) et L2(t) doit être orthogonale aux vecteurs directions
+     * de chacune des droites.
+     * Sachant qu'une droite orthogonale au vecteurs directions est le plus cours chemin,
+     * on obtiens donc les points les plus proches.
+     *
+     * On développe alors les équations pour obtenir alors ( '.' <=> produit scalaire) :
+     * (1') (p2 - p1).(p1 - p3) + s(p2 - p1).(p2 - p1) - t(p2 - p1).(p4 - p3) = 0
+     * (2') (p4 - p3).(p1 - p3) + s(p2 - p1).(p4 - p3) - t(p4 - p3).(p4 - p3) = 0
+     *
+     * en arrangeant l'équation (2') en fonction de s, on obtiens :
+     * (3) s = t(p4 - p3).(p4 - p3) - (p4 - p3).(p1 - p3) / (p2 - p1).(p4 - p3)
+     *
+     * et en remplacant s dans (1') par son équivalence de (3), on obtiens :
+     *     (p4 - p3).(p1 - p3) (p2 - p1).(p2 - p1) - (p2 - p1).(p1 - p3) (p2 - p1).(p4 - p3)
+     * t = ---------------------------------------------------------------------------------
+     *      (p2 - p1).(p2 - p1)(p4 - p3).(p4 - p3) - (p2 - p1).(p4 - p3)(p2 - p1).(p4 - p3)
+     *
+     * En utilisant le t calculé, nous pouvons calculer s avec (3).
+     *
+     * Pour le cas où s ou t ne sont pas dans l'intervale  [0, 1]
+     * ce ne sont plus les plus proches points, alors on calcule le plus proche point sur une droite par rapport
+     * à l'extrémité de l'autre droite :
+     * pour L1 et p3 (L1(s) - p3) . (p2 - p1) = 0
+     * pour L1 et p4 (L1(s) - p4) . (p2 - p1) = 0
+     * pour L2 et p1 (L2(t) - p1) . (p4 - p3) = 0
+     * pour L2 et p2 (L2(t) - p2) . (p4 - p3) = 0
+     *
+     * Puis on choisit pour chaque droite L1 et L2 le point résultant de s ou t minimisant
+     * la distance au point de l'extrémité de l'autre droite.
      */
-    fn intersecting_point(&self, other_line: &Line) -> P3 {
-        // 3 cas spéciaux : si les droites sont sur un plan totalement perpendiculaire à un des axe x, y ou z
-        // et donc 1 cas général: si le plan est non aligné
-        let r1 = self.b - self.a;
-        let r2 = other_line.b - other_line.a;
-        let mut r1_p = r1.clone();
-        let mut r2_p = r2.clone();
+    pub fn closest_point_on_lines(&self, line: &Line) -> [P3; 2] {
+        let p1 = self.a;
+        let p2 = self.b;
+        let p3 = line.a;
+        let p4 = line.b;
 
-        if r1_p.x() == ZERO {
-            r1_p[0] = ONE;
-        }
-        if r1_p.y() == ZERO {
-            r1_p[1] = ONE;
-        }
-        if r1_p.z() == ZERO {
-            r1_p[2] = ONE;
-        }
-        if r2_p.x() == ZERO {
-            r2_p[0] = ONE;
-        }
-        if r2_p.y() == ZERO {
-            r2_p[1] = ONE;
-        }
-        if r2_p.z() == ZERO {
-            r2_p[2] = ONE;
-        }
+        let d12 = p2 - p1;
+        let d34 = p4 - p3;
+        let d31 = p1 - p3;
+        let dot12 = dot(&d12, &d12);
+        let dot34 = dot(&d34, &d34);
+        let dot1234 = dot(&d12, &d34);
+        let dot3431 = dot(&d34, &d31);
 
-        let mut p = self.a.clone();
-        // perpendicular to X axis
-        if dot(&r1, &Directions::right()) == ZERO {
-            // y = az+b
-            let a1 = r1_p.y() / r1_p.z();
-            let b1 = dot(&self.a, &Directions::up());
-            let a2 = r2_p.y() / r2_p.z();
-            let b2 = dot(&other_line.a, &Directions::up());
+        let t = (dot3431 * dot12 - dot(&d12, &d31) * dot1234) / (dot12 * dot34 - dot1234 * dot1234);
+        let s = (t * dot34 - dot3431) / dot1234;
 
-            p[2] = (b2 - b1) / (a1 - a2);
+        if s >= ZERO && s <= ONE && t >= ZERO && t <= ONE {
+            [
+                self.a * (ONE - s) + self.b * s,
+                line.a * (ONE - t) + line.b * t,
+            ]
+        } else {
+            /*
+             * On calcule 4 points :
+             * - sur self le point le plus proche de p3
+             *            le point le plus proche de p4
+             * - sur line le point le plus proche de p1
+             *            le point le plus proche de p2
+             *
+             * Puis on détermine sur chaque droite, lequel des deux points
+             * est le plus proche sur l'autre droite.
+             */
+            let self_s_p3 = helper::clamp(-dot(&d31, &d12) / dot12, ZERO, ONE);
+            let self_s_p4 = helper::clamp(-dot(&(p1 - p4), &d12) / dot12, ZERO, ONE);
+            let line_t_p1 = helper::clamp(dot(&d31, &d34) / dot34, ZERO, ONE);
+            let line_t_p2 = helper::clamp(-dot(&(p3 - p2), &d34) / dot34, ZERO, ONE);
 
-            // p[1] = (a1 * b2 - a2 * b1) / (a1 - a2);
-            p[1] = a1 * p.z() + b1;
+            // points on self
+            let a = self.a * (ONE - self_s_p3) + self.b * self_s_p3;
+            let b = self.a * (ONE - self_s_p4) + self.b * self_s_p4;
+            let p_on_self;
+            if squared_magnitude(&(a - p3)) < squared_magnitude(&(b - p4)) {
+                p_on_self = a;
+            } else {
+                p_on_self = b;
+            }
+
+            // points on line
+            let c = line.a * (ONE - line_t_p1) + line.b * line_t_p1;
+            let d = line.a * (ONE - line_t_p2) + line.b * line_t_p2;
+            let p_on_line;
+            if squared_magnitude(&(c - p1)) < squared_magnitude(&(d - p2)) {
+                p_on_line = c;
+            } else {
+                p_on_line = d;
+            }
+
+            [p_on_self, p_on_line]
         }
-        // perpendicular to Y axis
-        else if dot(&r1, &Directions::up()) == ZERO {
-            // z = ax+b
-            let a1 = r1_p.z() / r1_p.x();
-            let b1 = dot(&self.a, &Directions::forward());
-            let a2 = r2_p.z() / r2_p.x();
-            let b2 = dot(&other_line.a, &Directions::forward());
-            p[0] = (b2 - b1) / (a1 - a2);
-            // p[2] = (a1 * b2 - a2 * b1) / (a1 - a2);
-            p[2] = a1 * p.x() + b1;
+    }
+
+    pub fn intersect(&self, line: &Line) -> Option<P3> {
+        let pts = self.closest_point_on_lines(line);
+
+        if helper::round_n_decimal_vector(&pts[0], 6) == helper::round_n_decimal_vector(&pts[1], 6)
+        {
+            Some(pts[0])
+        } else {
+            None
         }
-        // perpendicular to Z axis
-        else if dot(&r1, &Directions::forward()) == ZERO {
-            // y = ax+b
-            let a1 = r1_p.y() / r1_p.x();
-            let b1 = dot(&self.a, &Directions::up());
-            let a2 = r2_p.y() / r2_p.x();
-            let b2 = dot(&other_line.a, &Directions::up());
-
-            p[0] = (b2 - b1) / (a1 - a2);
-            // p[1] = (a1 * b2 - a2 * b1) / (a1 - a2);
-            p[1] = a1 * p.x() + b1;
-        }
-        // perpendicular to general case
-        else {
-            // y = ax+b
-            let a1 = r1_p.y() / r1_p.x();
-            let b1 = dot(&self.a, &Directions::up());
-            let a2 = r2_p.y() / r2_p.x();
-            let b2 = dot(&other_line.a, &Directions::up());
-
-            // z = kx+d
-            let k1 = r1_p.z() / r1_p.x();
-            let d1 = dot(&self.a, &Directions::forward());
-            // let k2 = r2_p.z() / r2_p.x();
-            // let d2 = dot(&other_line.a, &Directions::forward());
-
-            p[0] = (b2 - b1) / (a1 - a2);
-            p[1] = a1 * p.x() + b1;
-            p[2] = k1 * p.x() + d1;
-        }
-
-        p
     }
 }
 
@@ -113,7 +137,7 @@ mod tests {
     use super::*;
     use assert_approx_eq::assert_approx_eq;
     #[test]
-    fn test_intersecting_point() {
+    fn test_closest_point_on_lines() {
         // perpendicular to X axis
         {
             let l1 = Line {
@@ -125,7 +149,13 @@ mod tests {
                 b: P3::new(3.0, 0.0, 1.5),
             };
 
-            let r = l1.intersecting_point(&l2);
+            let r = l1.intersect(&l2);
+            assert!(r.is_some());
+
+            let r = r.unwrap();
+
+            assert_eq!(l1.point_on_line(r), true);
+            assert_eq!(l2.point_on_line(r), true);
 
             assert_approx_eq!(r.x(), 3.0);
             assert_approx_eq!(r.y(), 1.0);
@@ -143,8 +173,14 @@ mod tests {
                 b: P3::new(1.5, 3.0, ZERO),
             };
 
-            let r = l1.intersecting_point(&l2);
+            // let r = l1.intersecting_point(&l2);
+            let r = l1.intersect(&l2);
+            assert!(r.is_some());
 
+            let r = r.unwrap();
+
+            assert_eq!(l1.point_on_line(r), true);
+            assert_eq!(l2.point_on_line(r), true);
             assert_approx_eq!(r.x(), 1.0);
             assert_approx_eq!(r.y(), 3.0);
             assert_approx_eq!(r.z(), 1.0);
@@ -161,8 +197,14 @@ mod tests {
                 b: P3::new(1.0, 2.0, 0.0),
             };
 
-            let r = l1.intersecting_point(&l2);
+            // let r = l1.intersecting_point(&l2);
+            let r = l1.intersect(&l2);
+            assert!(r.is_some());
 
+            let r = r.unwrap();
+
+            assert_eq!(l1.point_on_line(r), true);
+            assert_eq!(l2.point_on_line(r), true);
             assert_approx_eq!(r.x(), 0.5);
             assert_approx_eq!(r.y(), 0.5);
             assert_approx_eq!(r.z(), 0.0);
@@ -180,12 +222,57 @@ mod tests {
                 b: rotation * P3::new(1.0, 2.0, 0.0),
             };
 
-            let r = l1.intersecting_point(&l2);
+            // let r = l1.intersecting_point(&l2);
+            let r = l1.intersect(&l2);
+            assert!(r.is_some());
+
+            let r = r.unwrap();
+
+            assert_eq!(l1.point_on_line(r), true);
+            assert_eq!(l2.point_on_line(r), true);
+
             let intersect_point = P3::new(0.5, 0.5, ZERO);
             let rotated_intersect_point = rotation * intersect_point;
             assert_approx_eq!(r.x(), rotated_intersect_point.x());
             assert_approx_eq!(r.y(), rotated_intersect_point.y());
             assert_approx_eq!(r.z(), rotated_intersect_point.z());
+        }
+        // not intersecting
+        {
+            let l1 = Line {
+                a: P3::origin(),
+                b: Directions::up() * 5.0,
+            };
+            let l2 = Line {
+                a: P3::new(1.0, 1.0, -3.0),
+                b: P3::new(1.0, 1.0, 3.0),
+            };
+            // let r = l1.intersecting_point(&l2);
+            let r = l1.intersect(&l2);
+            assert!(r.is_none());
+
+            // assert_eq!(l1.point_on_line(r), false);
+            // assert_eq!(l2.point_on_line(r), false);
+        }
+
+        // not intersecting closest point
+        {
+            let l1 = Line {
+                a: P3::origin(),
+                b: Directions::up() * 5.0,
+            };
+            let l2 = Line {
+                a: P3::new(1.0, 1.0, -3.0),
+                b: P3::new(1.0, 1.0, 3.0),
+            };
+            let r = l1.closest_point_on_lines(&l2);
+            // println!("{:?} {:?}", r[0], r[1]);
+
+            // assert_eq!(l1.point_on_line(r), false);
+            // assert_eq!(l2.point_on_line(r), false);
+            assert_approx_eq!(r[0].x(), ZERO);
+            assert_approx_eq!(r[0].y(), ONE);
+            assert_approx_eq!(r[0].z(), ZERO);
         }
     }
 }

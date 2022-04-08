@@ -93,7 +93,7 @@ fn clip(vertices_to_clip: &mut Vec<P3>, clipping_normal: Vec3, vertex_on_face: &
 
         if dot(&clipping_normal, &vertex2clip) > ZERO {
             // on clip
-            let clipped_point = face_to_vertex2clip + perpendicular(&clipping_normal, &vertex2clip);
+            let clipped_point = face_to_vertex2clip + rejection(&clipping_normal, &vertex2clip);
             vertices_to_clip[i] = clipped_point;
         }
     }

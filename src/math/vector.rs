@@ -1,4 +1,5 @@
 use super::{Real, ONE, ZERO};
+use std::cmp::{Eq, PartialEq};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
@@ -80,7 +81,7 @@ pub fn cross(v1: &Vector3, v2: &Vector3) -> Vector3 {
  * A is the normal unit vector representing the plane onto B is projected.
  * A is normalized
  */
-pub fn project(A: &Vector3, B: &Vector3) -> Vector3 {
+pub fn projection(A: &Vector3, B: &Vector3) -> Vector3 {
     A * dot(A, B)
 }
 
@@ -88,8 +89,8 @@ pub fn project(A: &Vector3, B: &Vector3) -> Vector3 {
  * Returns the perpendicular part of B to A
  * A is normalized
  */
-pub fn perpendicular(A: &Vector3, B: &Vector3) -> Vector3 {
-    B - &project(A, B)
+pub fn rejection(A: &Vector3, B: &Vector3) -> Vector3 {
+    B - &projection(A, B)
 }
 
 /**
@@ -97,7 +98,7 @@ pub fn perpendicular(A: &Vector3, B: &Vector3) -> Vector3 {
  * A is normalized
  */
 pub fn reflection(A: &Vector3, B: &Vector3) -> Vector3 {
-    let perp2 = perpendicular(A, B) * (2 as Real);
+    let perp2 = rejection(A, B) * (2 as Real);
     B - &perp2
 }
 
@@ -277,6 +278,15 @@ impl IndexMut<usize> for Vector3 {
         // r
     }
 }
+
+impl PartialEq for Vector3 {
+    fn eq(&self, other: &Self) -> bool {
+        self.data[0] == other.data[0]
+            && self.data[1] == other.data[1]
+            && self.data[2] == other.data[2]
+    }
+}
+impl Eq for Vector3 {}
 
 #[cfg(test)]
 mod tests {
