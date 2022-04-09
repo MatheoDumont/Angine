@@ -15,14 +15,14 @@ pub struct Projection {
 
 // distance, which face of the shape, the axis that leaves the face
 #[derive(Debug)]
-pub struct Face {
+pub struct FaceResult {
     pub distance: Real,
     pub axis: Vec3,
     pub face_index: usize,
 }
 // distance, edge of A, edge of B, the axis always leaves A
 #[derive(Debug)]
-pub struct Edge {
+pub struct EdgeResult {
     pub distance: Real,
     pub axis: Vec3,
     pub edge_a_index: usize,
@@ -30,16 +30,16 @@ pub struct Edge {
 }
 
 pub struct SAT2DResult {
-    pub face_A: Face,
-    pub face_B: Face,
+    pub face_A: FaceResult,
+    pub face_B: FaceResult,
 }
 #[derive(Debug)]
 pub struct SAT3DResult {
     // pub minimum_translation: Real,
     // pub minimum_axis: Vec3,
-    pub face_A: Face,
-    pub face_B: Face,
-    pub edge: Edge,
+    pub face_A: FaceResult,
+    pub face_B: FaceResult,
+    pub edge: EdgeResult,
 }
 
 fn project(axis: &Vec3, vertices: &Vec<P3>) -> Projection {
@@ -97,7 +97,7 @@ pub fn sat_2D(
         }
     }
 
-    let face_A = Face {
+    let face_A = FaceResult {
         distance,
         axis: best_axis.clone(),
         face_index: idx_best_axis,
@@ -122,7 +122,7 @@ pub fn sat_2D(
         }
     }
 
-    let face_B = Face {
+    let face_B = FaceResult {
         distance,
         axis: best_axis.clone(),
         face_index: idx_best_axis,
@@ -136,7 +136,7 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
     let vertices_B = shape_B.transformed_vertices();
 
     // ======================== Normals of A ========================
-    let mut best_face_A = Face {
+    let mut best_face_A = FaceResult {
         distance: f32::MAX,
         axis: Vec3::zeros(),
         face_index: 0,
@@ -158,7 +158,7 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
         }
     }
     // ======================== Normals of B ========================
-    let mut best_face_B = Face {
+    let mut best_face_B = FaceResult {
         distance: f32::MAX,
         axis: Vec3::zeros(),
         face_index: 0,
@@ -181,7 +181,7 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
     }
 
     // ======================== Cross product between edges of A and B ========================
-    let mut best_edge = Edge {
+    let mut best_edge = EdgeResult {
         distance: f32::MAX,
         axis: Vec3::zeros(),
         edge_a_index: 0,

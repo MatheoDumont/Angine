@@ -85,3 +85,7 @@ pub fn round_n_decimal_vector(x: &Vector3, n: i32) -> Vector3 {
         round_n_decimal(x.z(), n),
     )
 }
+
+pub fn same_points(p1: &P3, p2: &P3) -> bool {
+    round_n_decimal_vector(p1, 6) == round_n_decimal_vector(p2, 6)
+}

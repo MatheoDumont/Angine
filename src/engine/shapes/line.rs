@@ -6,6 +6,9 @@ pub struct Line {
 }
 
 impl Line {
+    pub fn new(a: P3, b: P3) -> Line {
+        Line { a, b }
+    }
     pub fn point_on_line(&self, p: P3) -> bool {
         let ap = normalized(&(p - self.a));
         let ab = normalized(&(self.b - self.a));
@@ -58,7 +61,7 @@ impl Line {
      * Puis on choisit pour chaque droite L1 et L2 le point résultant de s ou t minimisant
      * la distance au point de l'extrémité de l'autre droite.
      */
-    pub fn closest_point_on_lines(&self, line: &Line) -> [P3; 2] {
+    pub fn closest_point_each_other(&self, line: &Line) -> [P3; 2] {
         let p1 = self.a;
         let p2 = self.b;
         let p3 = line.a;
@@ -119,12 +122,10 @@ impl Line {
             [p_on_self, p_on_line]
         }
     }
-
     pub fn intersect(&self, line: &Line) -> Option<P3> {
-        let pts = self.closest_point_on_lines(line);
+        let pts = self.closest_point_each_other(line);
 
-        if helper::round_n_decimal_vector(&pts[0], 6) == helper::round_n_decimal_vector(&pts[1], 6)
-        {
+        if helper::same_points(&pts[0], &pts[1]) {
             Some(pts[0])
         } else {
             None
@@ -173,7 +174,6 @@ mod tests {
                 b: P3::new(1.5, 3.0, ZERO),
             };
 
-            // let r = l1.intersecting_point(&l2);
             let r = l1.intersect(&l2);
             assert!(r.is_some());
 
@@ -197,7 +197,6 @@ mod tests {
                 b: P3::new(1.0, 2.0, 0.0),
             };
 
-            // let r = l1.intersecting_point(&l2);
             let r = l1.intersect(&l2);
             assert!(r.is_some());
 
@@ -222,7 +221,6 @@ mod tests {
                 b: rotation * P3::new(1.0, 2.0, 0.0),
             };
 
-            // let r = l1.intersecting_point(&l2);
             let r = l1.intersect(&l2);
             assert!(r.is_some());
 
@@ -247,12 +245,8 @@ mod tests {
                 a: P3::new(1.0, 1.0, -3.0),
                 b: P3::new(1.0, 1.0, 3.0),
             };
-            // let r = l1.intersecting_point(&l2);
             let r = l1.intersect(&l2);
             assert!(r.is_none());
-
-            // assert_eq!(l1.point_on_line(r), false);
-            // assert_eq!(l2.point_on_line(r), false);
         }
 
         // not intersecting closest point
@@ -265,11 +259,7 @@ mod tests {
                 a: P3::new(1.0, 1.0, -3.0),
                 b: P3::new(1.0, 1.0, 3.0),
             };
-            let r = l1.closest_point_on_lines(&l2);
-            // println!("{:?} {:?}", r[0], r[1]);
-
-            // assert_eq!(l1.point_on_line(r), false);
-            // assert_eq!(l2.point_on_line(r), false);
+            let r = l1.closest_point_each_other(&l2);
             assert_approx_eq!(r[0].x(), ZERO);
             assert_approx_eq!(r[0].y(), ONE);
             assert_approx_eq!(r[0].z(), ZERO);

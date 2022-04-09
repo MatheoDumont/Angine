@@ -1,30 +1,36 @@
 use super::ContactManifold;
 
-use crate::engine::shapes::OBB;
-use crate::geometry::{geometry_traits::*, sat, sat::Edge, sat::Face, sat::SAT};
+use crate::engine::shapes::{Line, OBB};
+use crate::geometry::{geometry_traits::*, sat, sat::EdgeResult, sat::FaceResult};
 use crate::math::math_essentials::*;
-/**
- * Ca marche pas, il faut recenter les points pas seulement sur les sommes mais aussi sur aretes,
- * voir les faces aussi, 2 obb peuvent s'intersecter sans qu'aucun des sommets de l'un soient dans l'autre et vice versa.
- */
+
 pub fn obb_obb(obb1: &OBB, obb2: &OBB) -> ContactManifold {
     let sat_result = sat::sat_3D(obb1, obb2).unwrap();
 
-    if sat_result.face_A.distance < sat_result.edge.distance
-        && sat_result.face_B.distance < sat_result.edge.distance
+    let normal: Vec3;
+    let distance: Real;
+    let points: Vec<P3>;
+    if sat_result.face_A.distance <= sat_result.edge.distance
+        && sat_result.face_B.distance <= sat_result.edge.distance
     {
         // Face Contact
+        normal = sat_result.face_A.axis;
+        distance = sat_result.face_A.distance;
+        points = face_contact(&obb1, &obb2, &sat_result.face_A);
     } else {
         // Edge Contact
+        normal = sat_result.edge.axis;
+        distance = sat_result.edge.distance;
+        points = edge_contact(&obb1, &obb2, &sat_result.edge);
     }
     ContactManifold {
-        points: vec![], // should not be empty
-        normal_a_to_b: Directions::up(),
-        penetration_distance: ZERO,
+        points,
+        normal_a_to_b: normal,
+        penetration_distance: distance,
     }
 }
 
-pub fn face_contact(obb1: &OBB, obb2: &OBB, reference_face: &Face) -> Vec<P3> {
+pub fn face_contact(obb1: &OBB, obb2: &OBB, reference_face: &FaceResult) -> Vec<P3> {
     // face de obb1
     let reference_face_normal = reference_face.axis;
 
@@ -81,6 +87,27 @@ pub fn face_contact(obb1: &OBB, obb2: &OBB, reference_face: &Face) -> Vec<P3> {
     vertices_to_clip
 }
 
+pub fn edge_contact(obb1: &OBB, obb2: &OBB, edge: &EdgeResult) -> Vec<P3> {
+    let e1 = &obb1.edges_ref()[edge.edge_a_index];
+    let e2 = &obb2.edges_ref()[edge.edge_b_index];
+    let l1 = Line::new(
+        obb1.transformed_vertex(e1.vi1),
+        obb1.transformed_vertex(e1.vi2),
+    );
+    let l2 = Line::new(
+        obb1.transformed_vertex(e2.vi1),
+        obb1.transformed_vertex(e2.vi2),
+    );
+
+    let points = l1.closest_point_each_other(&l2);
+
+    if helper::same_points(&points[0], &points[1]) {
+        vec![points[0]]
+    } else {
+        vec![(points[0] + points[1]) / TWO]
+    }
+}
+
 /**
  * pour tous les points de adjacent_face_index ou dot(&p, side_normal) > 0, ramener pour dot(&p, side_normal) == 0
  * ou p est un des points composant la face adjacent_face_index
@@ -96,5 +123,13 @@ fn clip(vertices_to_clip: &mut Vec<P3>, clipping_normal: Vec3, vertex_on_face: &
             let clipped_point = face_to_vertex2clip + rejection(&clipping_normal, &vertex2clip);
             vertices_to_clip[i] = clipped_point;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_obb_contact() {
+        assert_eq!(false, true);
     }
 }
