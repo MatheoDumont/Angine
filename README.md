@@ -50,8 +50,9 @@ Cette technique est utilisée pour rester temps réel.
 
 ### Améliorations
 - amélioration pour SAT [ici](https://www.gdcvault.com/play/1017646/Physics-for-Game-Programmers-The)
+- [Quickhull](https://steamcdn-a.akamaihd.net/apps/valve/2014/DirkGregorius_ImplementingQuickHull.pdf)
+
 ### Aide
 
 - [Application](https://sumo.app/3d/?lang=en) web de visualisation 3D
-- [Quickhull](https://steamcdn-a.akamaihd.net/apps/valve/2014/DirkGregorius_ImplementingQuickHull.pdf)
 
