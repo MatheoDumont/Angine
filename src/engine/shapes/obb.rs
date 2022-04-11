@@ -112,10 +112,10 @@ impl OBB {
      * is p inside the OBB
      */
     pub fn is_inside(&self, p: &P3) -> bool {
-        let p_to_obb = p - &self.transform.translation;
+        let obb_to_p = p - &self.transform.translation;
         for i in 0..self.transform.rotation.size().0 {
             let axis = self.transform.rotation.row(i);
-            let scalar = dot(&axis, &p_to_obb);
+            let scalar = dot(&axis, &obb_to_p);
 
             if scalar > self.half_side[i] || scalar < -self.half_side[i] {
                 return false;
@@ -126,9 +126,9 @@ impl OBB {
     }
 
     /**
-     * Closest point on the contour of the OBB to p, or inside if p is inside
+     * return the projection of p onto the contour of the OBB, or p if p inside
      */
-    pub fn closest_point(&self, p: &P3) -> P3 {
+    pub fn project_point_onto_contour_or_inside(&self, p: &P3) -> P3 {
         let mut new_p = self.transform.translation.clone();
         let p_to_obb = p - &new_p;
 
@@ -140,30 +140,81 @@ impl OBB {
 
         new_p
     }
+    /**
+     * return the projection of p onto the contour of the OBB, with p being in or out of the OBB.
+     */
+    pub fn project_point_onto_contour_only(&self, p: &P3) -> P3 {
+        let n = p - &self.transform.translation;
+        self.project_on_contour_in_direction(&n)
+    }
 
-    pub fn closest_point_on_contour(&self, p: &P3) -> P3 {
-        let mut new_p = self.transform.translation.clone();
-        let p_to_obb = p - &new_p;
+    /**
+     * Same as 'project_point_onto_contour_only' but with a vector.
+     */
+    pub fn project_on_contour_in_direction(&self, n: &Vec3) -> P3 {
         let mut scalars = [ZERO; 3];
         let mut i_max = 0;
-        scalars[i_max] = dot(&self.transform.rotation.row(0), &p_to_obb);
+        scalars[i_max] = dot(&self.transform.rotation.row(0), &n);
+        // 0= tous différents, 1 = 2 pareils, 2 = tous pareils
+        let mut cas = 0;
+        let mut index_deuxiemecas_identique = 0;
 
         for i in 1..self.transform.rotation.size().0 {
             let axis = self.transform.rotation.row(i);
-            scalars[i] = dot(&axis, &p_to_obb);
-
-            if scalars[i].abs() > scalars[i_max].abs() {
+            scalars[i] = dot(&axis, &n);
+            if helper::round_n_decimal(scalars[i].abs(), 6)
+                == helper::round_n_decimal(scalars[i_max].abs(), 6)
+            {
+                if cas == 1 {
+                    cas = 2;
+                } else {
+                    index_deuxiemecas_identique = i;
+                    cas = 1;
+                }
+            } else if scalars[i].abs() > scalars[i_max].abs() {
                 i_max = i;
             }
         }
-        let mut max = self.half_side[i_max];
-        if scalars[i_max] < ZERO {
-            max = -max;
+        if cas == 0 {
+            let i = (i_max + 1) % 3;
+            let j = (i_max + 2) % 3;
+            self.transform.translation
+                + self.transform.rotation.row(i_max)
+                    * self.half_side[i_max]
+                    * helper::sign(scalars[i_max])
+                + self.transform.rotation.row(i)
+                    * helper::clamp(scalars[i], -self.half_side[i], self.half_side[i])
+                + self.transform.rotation.row(j)
+                    * helper::clamp(scalars[j], -self.half_side[j], self.half_side[j])
+        } else if cas == 1 {
+            let mut j = (i_max + 1) % 3;
+            if j == index_deuxiemecas_identique {
+                j = (i_max + 2) % 3;
+            }
+            self.transform.translation
+                + self.transform.rotation.row(i_max)
+                    * self.half_side[i_max]
+                    * helper::sign(scalars[i_max])
+                + self.transform.rotation.row(index_deuxiemecas_identique)
+                    * self.half_side[index_deuxiemecas_identique]
+                    * helper::sign(scalars[index_deuxiemecas_identique])
+                + self.transform.rotation.row(j)
+                    * helper::clamp(scalars[j], -self.half_side[j], self.half_side[j])
+        } else {
+            self.transform.translation
+                + self.transform.rotation.row(0) * self.half_side[0] * helper::sign(scalars[0])
+                + self.transform.rotation.row(1) * self.half_side[1] * helper::sign(scalars[1])
+                + self.transform.rotation.row(2) * self.half_side[2] * helper::sign(scalars[2])
         }
-        new_p
-            + self.transform.rotation.row(i_max) * max
-            + self.transform.rotation.row((i_max + 1) % 3) * scalars[(i_max + 1) % 3]
-            + self.transform.rotation.row((i_max + 2) % 3) * scalars[(i_max + 2) % 3]
+    }
+
+    /**
+     * Return the distance from the center of OBB to the point on the contour in the direction of the normal 'n'.
+     */
+    pub fn contour_distance(&self, n: &Vec3) -> Real {
+        self.half_side[0] * dot(&n, &self.transform.rotation.row(0)).abs()
+            + self.half_side[1] * dot(&n, &self.transform.rotation.row(1)).abs()
+            + self.half_side[2] * dot(&n, &self.transform.rotation.row(2)).abs()
     }
 }
 
@@ -284,68 +335,119 @@ mod tests {
         }
     }
     #[test]
-    fn OBB_closest_point() {
-        // not rotated
+    fn OBB_project_point_onto_contour() {
+        // project_point_onto_contour_or_inside
         {
-            let obb = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-            let p = obb.closest_point(&P3::new(1.5, 1.5, ZERO));
-            assert_eq!(p[0], ONE);
-            assert_eq!(p[1], ONE);
-            assert_eq!(p[2], ZERO);
+            // not rotated
+            {
+                let obb = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
+                let p = obb.project_point_onto_contour_or_inside(&P3::new(1.5, 1.5, ZERO));
+                assert_eq!(p[0], ONE);
+                assert_eq!(p[1], ONE);
+                assert_eq!(p[2], ZERO);
+            }
+            // rotated
+            {
+                {
+                    let obb = OBB::new(
+                        Vec3::new(ONE, ONE, ONE),
+                        Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
+                    );
+
+                    let p = obb.project_point_onto_contour_or_inside(&P3::new(ZERO, 2.0, ZERO));
+
+                    assert_eq!(p[0], ZERO);
+                    assert_eq!(p[1], (2 as f32).sqrt());
+                    assert_eq!(p[2], ZERO);
+                }
+
+                {
+                    let obb = OBB::new(
+                        Vec3::new(ONE, ONE, 2.0),
+                        Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
+                    );
+                    let p = obb.project_point_onto_contour_or_inside(&P3::new(ZERO, 2.0, 2.0));
+
+                    assert_eq!(p[0], ZERO);
+                    assert_eq!(p[1], (2 as f32).sqrt());
+                    assert_eq!(p[2], 2.0);
+                }
+            }
         }
-        // rotated
+        // project_point_onto_contour_only()
         {
             {
-                let obb = OBB::new(
-                    Vec3::new(ONE, ONE, ONE),
-                    Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
-                );
-
-                let p = obb.closest_point(&P3::new(ZERO, 2.0, ZERO));
-
-                assert_eq!(p[0], ZERO);
-                assert_eq!(p[1], (2 as f32).sqrt());
+                let obb = OBB::new(Vec3::new(2.0, ONE, ONE), Transform::identity());
+                let p = obb.project_point_onto_contour_only(&P3::new(ONE, ZERO, ZERO));
+                assert_eq!(p[0], 2.0);
+                assert_eq!(p[1], ZERO);
+                assert_eq!(p[2], ZERO);
+            }
+            // {
+            //     let obb = OBB::new(
+            //         Vec3::ones(),
+            //         Transform::new(
+            //             Vec3::ones(),
+            //             Rotation::Z(std::f32::consts::FRAC_PI_4),
+            //             Vec3::zeros(),
+            //         ),
+            //     );
+            //     let p = obb.project_point_onto_contour_only(&P3::new(ONE, ZERO, ZERO));
+            //     // assert_eq!(p[0], 2.0);
+            //     // assert_eq!(p[1], ZERO);
+            //     // assert_eq!(p[2], ZERO);
+            // }
+            // edge
+            {
+                let obb = OBB::new(Vec3::value(ONE), Transform::identity());
+                let p = obb.project_on_contour_in_direction(&Vec3::new(ONE, ONE, ZERO));
+                assert_eq!(p[0], ONE);
+                assert_eq!(p[1], ONE);
+                assert_eq!(p[2], ZERO);
+            }
+            // and direction non normalisé
+            {
+                let obb = OBB::new(Vec3::value(ONE), Transform::identity());
+                let p = obb.project_on_contour_in_direction(&Vec3::new(TWO, TWO, ZERO));
+                assert_eq!(p[0], ONE);
+                assert_eq!(p[1], ONE);
                 assert_eq!(p[2], ZERO);
             }
 
+            // corner
             {
-                let obb = OBB::new(
-                    Vec3::new(ONE, ONE, 2.0),
-                    Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
-                );
-                let p = obb.closest_point(&P3::new(ZERO, 2.0, 2.0));
+                let obb = OBB::new(Vec3::value(ONE), Transform::identity());
+                let p = obb.project_on_contour_in_direction(&Vec3::new(ONE, ONE, ONE));
+                assert_eq!(p[0], ONE);
+                assert_eq!(p[1], ONE);
+                assert_eq!(p[2], ONE);
+            }
 
-                assert_eq!(p[0], ZERO);
-                assert_eq!(p[1], (2 as f32).sqrt());
-                assert_eq!(p[2], 2.0);
+            // with rectangle
+            {
+                let obb = OBB::new(Vec3::new(TWO, ONE, ONE), Transform::identity());
+                let p = obb.project_on_contour_in_direction(&Vec3::new(TWO, ONE, ZERO));
+                assert_eq!(p[0], TWO);
+                assert_eq!(p[1], ONE);
+                assert_eq!(p[2], ZERO);
+            }
+
+            // rotated
+            {
+                let t = Transform::rotation(Rotation::Z(helper::angle_2_rad(45.0)));
+                let pp = t.transform(&P3::new(-ONE, -ONE, -ONE));
+                println!("{:?}", pp);
+                let obb = OBB::new(Vec3::new(ONE, ONE, ONE), t);
+                let p = obb.project_on_contour_in_direction(&Vec3::new(ZERO, -ONE, ZERO));
+                println!("{:?}", p);
+
+                assert_eq!(p[0], pp.x());
+                assert_eq!(p[1], pp.y());
+                assert_eq!(p[2], ZERO);
             }
         }
     }
-    #[test]
-    fn OBB_closest_point_on_contour() {
-        {
-            let obb = OBB::new(Vec3::new(2.0, ONE, ONE), Transform::identity());
-            let p = obb.closest_point_on_contour(&P3::new(ONE, -ZERO, ZERO));
-            assert_eq!(p[0], 2.0);
-            assert_eq!(p[1], ZERO);
-            assert_eq!(p[2], ZERO);
-        }
-        {
-            let obb = OBB::new(
-                Vec3::ones(),
-                Transform::new(
-                    Vec3::ones(),
-                    Rotation::Z(std::f32::consts::FRAC_PI_4),
-                    Vec3::zeros(),
-                ),
-            );
-            let p = obb.closest_point_on_contour(&P3::new(ONE, ZERO, ZERO));
-            println!("{:?}", p);
-            // assert_eq!(p[0], 2.0);
-            // assert_eq!(p[1], ZERO);
-            // assert_eq!(p[2], ZERO);
-        }
-    }
+
     #[test]
     fn normal_face_test() {
         let obb = OBB::new(
@@ -416,52 +518,4 @@ mod tests {
             assert_eq!(x[2], normal[2]);
         }
     }
-    // #[test]
-    // fn computed_against_stored_normal() {
-    //     let obb = OBB::new(
-    //         Vec3::new(ONE, ONE, ONE),
-    //         Transform::new(
-    //             Vec3::ones(),
-    //             Rotation::composed(
-    //                 helper::angle_2_rad(30 as Real),
-    //                 helper::angle_2_rad(-35 as Real),
-    //                 helper::angle_2_rad(-45 as Real),
-    //             ),
-    //             // Vec3::new(1.125 as Real, 0.934 as Real, ZERO),
-    //             Vec3::zeros(),
-    //         ),
-    //     );
-    //     println!(
-    //         "{:?}",
-    //         Rotation::composed(
-    //             helper::angle_2_rad(30 as Real),
-    //             helper::angle_2_rad(-35 as Real),
-    //             helper::angle_2_rad(-45 as Real),
-    //         )
-    //     );
-
-    //     for i in 0..obb.faces_ref()[0].v_i.len() {
-    //         let index = obb.faces_ref()[0].v_i[i];
-    //         println!(
-    //             "p{:?} = {:?}",
-    //             obb.faces_ref()[0].v_i[i],
-    //             obb.transform.transform_vec(obb.local_vertex_ref(index))
-    //         );
-    //     }
-    //     for i in 0..6 {
-    //         let computed_normal = obb.computed_face_normal(i);
-    //         let stored_normal = obb.face_normal(i);
-    //         println!(
-    //             "=== i {:?} computed_normal {:?} stored_normal {:?}",
-    //             i,
-    //             // helper::vect_angles(&computed_normal),
-    //             // helper::vect_angles(&stored_normal)
-    //             computed_normal,
-    //             stored_normal,
-    //         );
-    //         assert_eq!(computed_normal[0], stored_normal[0]);
-    //         assert_eq!(computed_normal[1], stored_normal[1]);
-    //         assert_eq!(computed_normal[2], stored_normal[2]);
-    //     }
-    // }
 }

@@ -2,7 +2,7 @@ use crate::engine::shapes::{Sphere, OBB};
 use crate::math::math_essentials::*;
 
 pub fn obb_sphere(obb: &OBB, sphere: &Sphere) -> bool {
-    let d = sphere.position - obb.closest_point(&sphere.position);
+    let d = sphere.position - obb.project_point_onto_contour_or_inside(&sphere.position);
     squared_magnitude(&d) <= (sphere.radius * sphere.radius)
 }
 

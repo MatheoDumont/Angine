@@ -50,6 +50,11 @@ impl Plane {
     pub fn signed_distance(&self, v: &Vector3) -> Real {
         dot(&self.normal, &v) - self.distance_from_origin
     }
+
+    pub fn point_to_plane(&self, v: &P3) -> Vec3 {
+        // rejection en prennant en compte la distance au plan
+        -self.normal * (dot(&self.normal, v) - self.distance_from_origin)
+    }
 }
 
 impl Shape for Plane {

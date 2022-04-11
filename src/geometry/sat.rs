@@ -560,28 +560,4 @@ mod test {
             assert!(r.is_none());
         }
     }
-    // #[test]
-    // fn test_normal() {
-    //     let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-
-    //     let obb2 = OBB::new(
-    //         Vec3::new(ONE, ONE, ONE),
-    //         Transform::new(
-    //             Vec3::ones(),
-    //             Rotation::composed(
-    //                 helper::angle_2_rad(30 as Real),
-    //                 helper::angle_2_rad(-35 as Real),
-    //                 helper::angle_2_rad(-45 as Real),
-    //             ),
-    //             Vec3::new(1.125 as Real, 0.934 as Real, ZERO),
-    //         ),
-    //     );
-
-    //     for sep in obb2.sat_separating_axis() {
-    //         let normal_computed = obb2.computed_face_normal(sep);
-    //         println!("id :{:?}", sep);
-    //         println!("rotation:{:?} \n", obb2.face_normal(sep));
-    //         println!("computed:{:?} \n", normal_computed);
-    //     }
-    // }
 }
