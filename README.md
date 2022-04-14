@@ -1,5 +1,5 @@
 # Angine
-Implementation of a Physics engine in Rust with basic physics simulation and collision.
+Implementation of a Physics Engine in Rust with basic physics simulation and collision detection.
 
 ## Documentation 
 A good take of intersection and some math comes from [*The game physic cookbook*](https://gamephysicscookbook.com/), but i didn't exactly followed it.
