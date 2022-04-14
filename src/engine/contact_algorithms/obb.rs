@@ -113,14 +113,11 @@ pub fn edge_contact(obb1: &OBB, obb2: &OBB, edge: &EdgeResult) -> Vec<P3> {
  * ou p est un des points composant la face adjacent_face_index
  */
 fn clip(vertices_to_clip: &mut Vec<P3>, clipping_normal: Vec3, vertex_on_face: &Vec3) {
-    // for adj_face_vertex_index in &obb2.faces_ref()[adjacent_face_index].v_i {
-    for i in 0..vertices_to_clip.len() {
-        let vertex2clip = &vertices_to_clip[i];
-        let face_to_vertex2clip = vertex2clip - vertex_on_face;
+    for v in vertices_to_clip.iter_mut() {
+        let face2vertex = *v - *vertex_on_face;
 
-        if dot(&clipping_normal, &vertex2clip) > ZERO {
-            vertices_to_clip[i] =
-                vertex2clip - &projection(&clipping_normal, &(vertex2clip - vertex_on_face));
+        if dot(&clipping_normal, &v) > ZERO {
+            *v -= projection(&clipping_normal, &face2vertex);
         }
     }
 }
