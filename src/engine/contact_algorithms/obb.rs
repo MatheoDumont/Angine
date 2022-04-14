@@ -119,17 +119,57 @@ fn clip(vertices_to_clip: &mut Vec<P3>, clipping_normal: Vec3, vertex_on_face: &
         let face_to_vertex2clip = vertex2clip - vertex_on_face;
 
         if dot(&clipping_normal, &vertex2clip) > ZERO {
-            // on clip
-            let clipped_point = face_to_vertex2clip + rejection(&clipping_normal, &vertex2clip);
-            vertices_to_clip[i] = clipped_point;
+            vertices_to_clip[i] =
+                vertex2clip - &projection(&clipping_normal, &(vertex2clip - vertex_on_face));
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     #[test]
-    fn test_obb_contact() {
-        assert_eq!(false, true);
+    fn test_clip() {
+        {
+            let mut v = vec![
+                P3::new(1.0, 2.0, 3.0),
+                P3::new(-1.0, -2.0, -3.0),
+                P3::new(1.0, 0.0, 3.0),
+            ];
+            clip(&mut v, Directions::up(), &P3::origin());
+
+            assert_eq!(v[0].x(), ONE);
+            assert_eq!(v[0].y(), ZERO);
+            assert_eq!(v[0].z(), 3.0);
+
+            assert_eq!(v[1].x(), -ONE);
+            assert_eq!(v[1].y(), -2.0);
+            assert_eq!(v[1].z(), -3.0);
+
+            assert_eq!(v[2].x(), ONE);
+            assert_eq!(v[2].y(), ZERO);
+            assert_eq!(v[2].z(), 3.0);
+        }
+
+        {
+            let mut v = vec![
+                P3::new(1.0, 2.0, 3.0),
+                P3::new(-1.0, -2.0, -3.0),
+                P3::new(1.0, 0.0, 3.0),
+            ];
+            clip(&mut v, Directions::right(), &P3::origin());
+
+            assert_eq!(v[0].x(), ZERO);
+            assert_eq!(v[0].y(), 2.0);
+            assert_eq!(v[0].z(), 3.0);
+
+            assert_eq!(v[1].x(), -ONE);
+            assert_eq!(v[1].y(), -2.0);
+            assert_eq!(v[1].z(), -3.0);
+
+            assert_eq!(v[2].x(), ZERO);
+            assert_eq!(v[2].y(), ZERO);
+            assert_eq!(v[2].z(), 3.0);
+        }
     }
 }
