@@ -128,6 +128,7 @@ fn clip(vertices_to_clip: &mut Vec<P3>, clipping_normal: Vec3, vertex_on_face: &
 #[cfg(test)]
 mod tests {
     use super::*;
+    use assert_approx_eq::assert_approx_eq;
     #[test]
     fn test_clip() {
         {
@@ -170,6 +171,23 @@ mod tests {
             assert_eq!(v[2].x(), ZERO);
             assert_eq!(v[2].y(), ZERO);
             assert_eq!(v[2].z(), 3.0);
+        }
+
+        {
+            let mut v = vec![
+                P3::new(1.0, 2.0, 3.0),
+                P3::new(-1.0, -2.0, -3.0),
+                P3::new(1.0, 0.0, 3.0),
+            ];
+            let normal = Rotation::Z(helper::angle_2_rad(45.0)) * Directions::right();
+
+            clip(&mut v, normal, &P3::origin());
+
+            assert_approx_eq!(dot(&v[0], &normal), ZERO);
+            assert_approx_eq!(v[1].x(), -ONE);
+            assert_approx_eq!(v[1].y(), -2.0);
+            assert_approx_eq!(v[1].z(), -3.0);
+            assert_approx_eq!(dot(&v[2], &normal), ZERO);
         }
     }
 }
