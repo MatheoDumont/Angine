@@ -7,9 +7,9 @@ A good take of intersection and some math comes from [*The game physic cookbook*
 - Row majored matrix
 - [Left-handed coordinate system](https://www.evl.uic.edu/ralph/508S98/coordinates.html)  
 ![left_hand_coord_system](https://user-images.githubusercontent.com/29271028/159712557-554fbb55-8b8e-41b9-852a-567de70e4713.png)  
-The rotation order is counter-clockwise :
+The rotation order is clockwise 
 ```
-rotation::z_axis(90 degrees) * vec::up = vec::left (-vec::right)
+rotation::z_axis(90 degrees) * vec::right = vec::up
 ```
 as well for the cross product orientation result:
 ```
