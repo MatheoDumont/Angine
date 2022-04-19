@@ -20,8 +20,17 @@ pub enum ShapeType {
 }
 
 pub trait Shape: DowncastSync {
-    fn inertia_matrix(&self, mass: Real) -> Mat3;
     fn shape_type(&self) -> ShapeType;
+    fn is_rigid_body(&self) -> bool;
+    fn compute_inertia_matrix(&mut self, mass: Real);
+    fn inertia_matrix(&self) -> &Mat3;
+    fn inverse_inertia_matrix(&self) -> &Mat3;
+
+    fn get_position(&self) -> &P3;
+    fn get_orientation(&self) -> &Mat3;
+    fn set_position(&mut self, p: P3);
+    fn set_orientation(&mut self, o: Mat3);
+
     // fn transform_ref(&self) -> &Transform;
     // fn set_transform(&self, t: Transform);
 }

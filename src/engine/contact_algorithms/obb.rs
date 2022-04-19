@@ -101,7 +101,9 @@ pub fn edge_contact(obb1: &OBB, obb2: &OBB, edge: &EdgeResult) -> Vec<P3> {
 
     let points = l1.closest_point_each_other(&l2);
 
-    if helper::same_points(&points[0], &points[1]) {
+    if helper::round_n_decimal_vector(&points[0], 6)
+        == helper::round_n_decimal_vector(&points[1], 6)
+    {
         vec![points[0]]
     } else {
         vec![(points[0] + points[1]) / TWO]

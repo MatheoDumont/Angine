@@ -6,6 +6,8 @@ pub struct Plane {
     pub normal: Vec3,
     pub distance_from_origin: Real,
     pub transform: Transform,
+    pub inertia_matrix: Mat3,
+    pub inv_inertia_matrix: Mat3,
 }
 
 impl Plane {
@@ -21,6 +23,8 @@ impl Plane {
             normal: normal,
             distance_from_origin: magnitude(&position),
             transform: Transform::translation(position),
+            inertia_matrix: Mat3::identity(),
+            inv_inertia_matrix: Mat3::identity(),
         }
     }
 
@@ -58,13 +62,37 @@ impl Plane {
 }
 
 impl Shape for Plane {
-    fn inertia_matrix(&self, mass: Real) -> Mat3 {
+    fn compute_inertia_matrix(&mut self, mass: Real) {
         // pour l'instant
         panic!("inertia matrix for Plane not implemented");
     }
 
+    fn inertia_matrix(&self) -> &Mat3 {
+        &self.inertia_matrix
+    }
+    fn inverse_inertia_matrix(&self) -> &Mat3 {
+        &self.inv_inertia_matrix
+    }
+
     fn shape_type(&self) -> ShapeType {
         ShapeType::Plane
+    }
+
+    fn is_rigid_body(&self) -> bool {
+        false
+    }
+
+    fn get_position(&self) -> &P3 {
+        &self.transform.translation
+    }
+    fn get_orientation(&self) -> &Mat3 {
+        &self.transform.rotation
+    }
+    fn set_position(&mut self, p: P3) {
+        self.transform.translation = p;
+    }
+    fn set_orientation(&mut self, o: Mat3) {
+        self.transform.rotation = o;
     }
 }
 

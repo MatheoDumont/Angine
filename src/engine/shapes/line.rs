@@ -125,7 +125,8 @@ impl Line {
     pub fn intersect(&self, line: &Line) -> Option<P3> {
         let pts = self.closest_point_each_other(line);
 
-        if helper::same_points(&pts[0], &pts[1]) {
+        if helper::round_n_decimal_vector(&pts[0], 6) == helper::round_n_decimal_vector(&pts[1], 6)
+        {
             Some(pts[0])
         } else {
             None

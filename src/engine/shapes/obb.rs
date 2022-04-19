@@ -10,14 +10,54 @@ pub struct OBB {
     pub vertices: Vec<P3>,
     pub edges: Vec<EdgeIndex>,
     pub faces: Vec<FaceIndex>,
+    pub inertia_matrix: Mat3,
+    pub inv_inertia_matrix: Mat3,
 }
 
 impl Shape for OBB {
-    fn inertia_matrix(&self, mass: Real) -> Mat3 {
-        panic!("inertia matrix for Plane not implemented");
+    /**
+     * source : https://meefi.pedagogie.ec-nantes.fr/meca/lexique/matrices-inertie/Formulaire.htm
+     */
+    fn compute_inertia_matrix(&mut self, mass: Real) {
+        let x_squared = self.half_side.x() * self.half_side.x() * 4.0;
+        let y_squared = self.half_side.y() * self.half_side.y() * 4.0;
+        let z_squared = self.half_side.z() * self.half_side.z() * 4.0;
+        let div = mass / 12.0;
+
+        let diag = Vector3::new(
+            div * (y_squared + z_squared),
+            div * (x_squared + z_squared),
+            div * (x_squared + y_squared),
+        );
+        self.inertia_matrix = Mat3::diag(diag);
+        self.inv_inertia_matrix = self.inertia_matrix.inverse();
     }
+    fn inertia_matrix(&self) -> &Mat3 {
+        &self.inertia_matrix
+    }
+    fn inverse_inertia_matrix(&self) -> &Mat3 {
+        &self.inv_inertia_matrix
+    }
+
     fn shape_type(&self) -> ShapeType {
         ShapeType::OBB
+    }
+
+    fn is_rigid_body(&self) -> bool {
+        true
+    }
+
+    fn get_position(&self) -> &P3 {
+        &self.transform.translation
+    }
+    fn get_orientation(&self) -> &Mat3 {
+        &self.transform.rotation
+    }
+    fn set_position(&mut self, p: P3) {
+        self.transform.translation = p;
+    }
+    fn set_orientation(&mut self, o: Mat3) {
+        self.transform.rotation = o;
     }
 }
 
@@ -30,6 +70,8 @@ impl OBB {
         OBB {
             half_side,
             transform,
+            inertia_matrix: Mat3::zero(),
+            inv_inertia_matrix: Mat3::zero(),
             vertices: vec![
                 P3::new(xl, yl, zl),    // far top right
                 P3::new(-xl, yl, zl),   // far top left

@@ -1,5 +1,5 @@
 use crate::engine::shapes::Shape;
-use crate::math::{Transform, Vec3, P3};
+use crate::math::math_essentials::*;
 
 pub struct CollisionObject {
     pub enabled: bool,
@@ -15,4 +15,6 @@ impl CollisionObject {
             shape: shape,
         }
     }
+
+    
 }
