@@ -1,9 +1,9 @@
-use crate::engine::collision::CollisionObject;
 use crate::engine::contact_algorithms;
-use crate::engine::contact_algorithms::ContactManifold;
+use crate::engine::contact_algorithms::ContactInformation;
 use crate::engine::shapes::{Plane, Shape, Sphere, OBB};
+use crate::math::Vec3;
 
-type FuncType = fn(&Box<dyn Shape>, &Box<dyn Shape>) -> Option<ContactManifold>;
+type FuncType = fn(&Box<dyn Shape>, &Box<dyn Shape>) -> Option<ContactInformation>;
 const N_SHAPES: usize = 3;
 const INTERSECTIONS_FUNCTIONS_BY_SHAPE_TYPE: [[Option<FuncType>; N_SHAPES]; N_SHAPES] = [
     //Sphere = 0
@@ -47,10 +47,32 @@ pub fn get_intersection_fn_by_collisiontypes(
     INTERSECTIONS_FUNCTIONS_BY_SHAPE_TYPE[i1][i2]
 }
 
+/**
+ * Dans les cas ou les arguments shape sont dans un sens et sont intervertis car la fonction d'intersection
+ * et de contact les prends dans l'autre sens,dans ce cas on swap la normal pour qu'elle pointe toujours de a vers b.
+ *
+ * Exemple:
+ * get_intersection_fn_by_collisiontypes(sphere, OBB)
+ * i1 = 0, i2 = 1
+ * et dans le tableau INTERSECTIONS_FUNCTIONS_BY_SHAPE_TYPE[0][1] = compute_sphere_obb
+ * MAIS !
+ * 'compute_sphere_obb' est une fonction de facade pour accélérer la le recherche de la fonction d'intersection
+ * la vraie fonction qui calcule l'intersection est 'obb_sphere::obb_sphere(o2, o1)' et prend les arguments
+ * dans l'autre ordre donc quand cela arrive il fois swap la normal.
+ *
+ * Pourquoi on ne passe pas le CollisionObject directement : détail d'implementation, je voulais séparer les données vu
+ * qu'on a besoin que de la shape et d'une position, à terme ca pourrait changer si la position se retrouve dans CollisionObject.
+ * C'est le genre de détail chiant de conception qui se prévoit mal en amont car j'avais pas une idée claire de à quoi je voulais que ca 
+ * ressemble.
+ */
+pub fn swap_normal_orientation(normal: &mut Vec3) {
+    *normal = -*normal;
+}
+
 fn compute_sphere_sphere(
     shape1: &Box<dyn Shape>,
     shape2: &Box<dyn Shape>,
-) -> Option<ContactManifold> {
+) -> Option<ContactInformation> {
     let o1 = shape1
         .downcast_ref::<Sphere>()
         .expect("Tried to downcast to Sphere");
@@ -65,7 +87,7 @@ fn compute_sphere_sphere(
     }
 }
 
-fn compute_obb_obb(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Option<ContactManifold> {
+fn compute_obb_obb(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Option<ContactInformation> {
     let o1 = shape1
         .downcast_ref::<OBB>()
         .expect("Tried to downcast to OBB");
@@ -83,7 +105,7 @@ fn compute_obb_obb(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Option<C
 fn compute_plane_plane(
     shape1: &Box<dyn Shape>,
     shape2: &Box<dyn Shape>,
-) -> Option<ContactManifold> {
+) -> Option<ContactInformation> {
     let o1 = shape1
         .downcast_ref::<Plane>()
         .expect("Tried to downcast to Plane");
@@ -98,7 +120,10 @@ fn compute_plane_plane(
     }
 }
 
-fn compute_sphere_obb(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Option<ContactManifold> {
+fn compute_sphere_obb(
+    shape1: &Box<dyn Shape>,
+    shape2: &Box<dyn Shape>,
+) -> Option<ContactInformation> {
     let o1 = shape1
         .downcast_ref::<Sphere>()
         .expect("Tried to downcast to Sphere");
@@ -107,13 +132,18 @@ fn compute_sphere_obb(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Optio
         .expect("Tried to downcast to OBB");
 
     if super::obb_sphere::obb_sphere(o2, o1) {
-        Some(contact_algorithms::obb_sphere(o2, o1))
+        let mut ci = contact_algorithms::obb_sphere(o2, o1);
+        swap_normal_orientation(&mut ci.normal_a_to_b);
+        Some(ci)
     } else {
         None
     }
 }
 
-fn compute_obb_sphere(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Option<ContactManifold> {
+fn compute_obb_sphere(
+    shape1: &Box<dyn Shape>,
+    shape2: &Box<dyn Shape>,
+) -> Option<ContactInformation> {
     let o1 = shape1
         .downcast_ref::<OBB>()
         .expect("Tried to downcast to OBB");
@@ -128,7 +158,10 @@ fn compute_obb_sphere(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Optio
     }
 }
 
-fn compute_obb_plane(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Option<ContactManifold> {
+fn compute_obb_plane(
+    shape1: &Box<dyn Shape>,
+    shape2: &Box<dyn Shape>,
+) -> Option<ContactInformation> {
     let o1 = shape1
         .downcast_ref::<OBB>()
         .expect("Tried to downcast to OBB");
@@ -143,7 +176,10 @@ fn compute_obb_plane(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Option
     }
 }
 
-fn compute_plane_obb(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Option<ContactManifold> {
+fn compute_plane_obb(
+    shape1: &Box<dyn Shape>,
+    shape2: &Box<dyn Shape>,
+) -> Option<ContactInformation> {
     let o1 = shape1
         .downcast_ref::<Plane>()
         .expect("Tried to downcast to Plane");
@@ -152,7 +188,9 @@ fn compute_plane_obb(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Option
         .expect("Tried to downcast to OBB");
 
     if super::obb_plane::obb_plane(o2, o1) {
-        Some(contact_algorithms::obb_plane(o2, o1))
+        let mut ci = contact_algorithms::obb_plane(o2, o1);
+        swap_normal_orientation(&mut ci.normal_a_to_b);
+        Some(ci)
     } else {
         None
     }
@@ -161,7 +199,7 @@ fn compute_plane_obb(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Option
 fn compute_plane_sphere(
     shape1: &Box<dyn Shape>,
     shape2: &Box<dyn Shape>,
-) -> Option<ContactManifold> {
+) -> Option<ContactInformation> {
     let o1 = shape1
         .downcast_ref::<Plane>()
         .expect("Tried to downcast to Plane");
@@ -179,7 +217,7 @@ fn compute_plane_sphere(
 fn compute_sphere_plane(
     shape1: &Box<dyn Shape>,
     shape2: &Box<dyn Shape>,
-) -> Option<ContactManifold> {
+) -> Option<ContactInformation> {
     let o1 = shape1
         .downcast_ref::<Sphere>()
         .expect("Tried to downcast to Sphere");
@@ -188,7 +226,9 @@ fn compute_sphere_plane(
         .expect("Tried to downcast to Plane");
 
     if super::plane_sphere::plane_sphere(o2, o1) {
-        Some(contact_algorithms::plane_sphere(o2, o1))
+        let mut ci = contact_algorithms::plane_sphere(o2, o1);
+        swap_normal_orientation(&mut ci.normal_a_to_b);
+        Some(ci)
     } else {
         None
     }

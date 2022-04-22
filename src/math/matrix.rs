@@ -1,5 +1,5 @@
 use super::{vector::*, Real, Vec3, Vector3, ONE, P3, ZERO};
-use std::ops::Mul;
+use std::ops::{Index, IndexMut, Mul};
 
 /**
  * Implémentation unique de Matrice carré 3x3.
@@ -188,6 +188,30 @@ impl Mat3 {
         let cofactors = Mat3::cofactor_from(&minors);
         let adj = Mat3::adjugate_from(&cofactors);
         &adj * (ONE / det)
+    }
+}
+
+impl Index<usize> for Mat3 {
+    type Output = [Real; 3];
+    fn index(&self, index: usize) -> &Self::Output {
+        debug_assert!(index < 3);
+
+        &self.data[index]
+        // let ptr_x = std::ptr::addr_of!(self.x);
+
+        // let r = unsafe { ptr_x.offset(index.try_into().unwrap()).as_ref().unwrap() };
+        // r
+    }
+}
+
+impl IndexMut<usize> for Mat3 {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        debug_assert!(index < 3);
+        &mut self.data[index]
+        // let ptr_x = std::ptr::addr_of_mut!(self.x); // sinon &mut self.x as *mut Real
+
+        // let r = unsafe { ptr_x.offset(index.try_into().unwrap()).as_mut().unwrap() };
+        // r
     }
 }
 

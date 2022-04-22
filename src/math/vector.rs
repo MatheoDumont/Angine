@@ -204,12 +204,22 @@ impl Div<Real> for &Vector3 {
     }
 }
 
+impl Mul for Vector3 {
+    type Output = Self;
+
+    fn mul(self, v: Self) -> Self {
+        Vector3 {
+            data: [self[0] * v[0], self[1] * v[1], self[2] * v[2]],
+        }
+    }
+}
+
 impl Mul<Real> for Vector3 {
     type Output = Vector3;
 
-    fn mul(self, m: Real) -> Self::Output {
+    fn mul(self, rhs: Real) -> Self::Output {
         Vector3 {
-            data: [self[0] * m, self[1] * m, self[2] * m],
+            data: [self[0] * rhs, self[1] * rhs, self[2] * rhs],
         }
     }
 }
@@ -217,9 +227,9 @@ impl Mul<Real> for Vector3 {
 impl Mul<Real> for &Vector3 {
     type Output = Vector3;
 
-    fn mul(self, m: Real) -> Self::Output {
+    fn mul(self, rhs: Real) -> Self::Output {
         Vector3 {
-            data: [self[0] * m, self[1] * m, self[2] * m],
+            data: [self[0] * rhs, self[1] * rhs, self[2] * rhs],
         }
     }
 }

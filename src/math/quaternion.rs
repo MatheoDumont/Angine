@@ -1,5 +1,5 @@
 use super::{helper, Directions, Mat3, Real, Vec3, ONE, TWO, ZERO};
-use std::ops::{Div, Mul};
+use std::ops::{Add, Div, Mul};
 
 /**
  * https://perso.liris.cnrs.fr/alexandre.meyer/teaching/master_charanim/aPDF_COURS_M2/M2_1b_Quaternions
@@ -127,6 +127,35 @@ impl Quaternion {
         ])
     }
 
+    /**
+     * sources : https://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
+     *           https://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/paul.htm
+     */
+    pub fn from_mat3(m: &Mat3) -> Quaternion {
+        let w = helper::max(ZERO, ONE + m[0][0] + m[1][1] + m[2][2]).sqrt() / TWO;
+        let x = helper::max(ZERO, ONE + m[0][0] - m[1][1] - m[2][2]).sqrt() / TWO;
+        let y = helper::max(ZERO, ONE - m[0][0] + m[1][1] - m[2][2]).sqrt() / TWO;
+        let z = helper::max(ZERO, ONE - m[0][0] - m[1][1] + m[2][2]).sqrt() / TWO;
+        // Q.x = _copysign( Q.x, m21 - m12 )
+        // Q.y = _copysign( Q.y, m02 - m20 )
+        // Q.z = _copysign( Q.z, m10 - m01 )
+        let copysign = |a: Real, b: Real| {
+            if b > ZERO {
+                a.abs()
+            } else if b < ZERO {
+                -a.abs()
+            } else {
+                ZERO
+            }
+        };
+        Quaternion {
+            w,
+            x: copysign(x, m[2][1] - m[1][2]),
+            y: copysign(y, m[0][2] - m[2][0]),
+            z: copysign(z, m[1][0] - m[0][1]),
+        }
+    }
+
     pub fn conjugate(&self) -> Quaternion {
         Quaternion {
             w: self.w,
@@ -157,6 +186,19 @@ impl Quaternion {
     }
 }
 
+impl Add for Quaternion {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Quaternion {
+            w: self.w + rhs.w,
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
 /**
  * 16 multiplications + 12 additioins/soustractions = 28 opérations
  */
@@ -180,6 +222,18 @@ impl Mul for &Quaternion {
             x: (self.w * rhs.x + self.x * rhs.w) + (self.y * rhs.z - rhs.y * self.z),
             y: (self.w * rhs.y + self.y * rhs.w) + (self.z * rhs.x - rhs.z * self.x),
             z: (self.w * rhs.z + self.z * rhs.w) + (self.x * rhs.y - rhs.x * self.y),
+        }
+    }
+}
+
+impl Mul<Real> for Quaternion {
+    type Output = Quaternion;
+    fn mul(self, rhs: Real) -> Self::Output {
+        Quaternion {
+            w: self.w * rhs,
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
         }
     }
 }

@@ -3,7 +3,7 @@ use crate::math::math_essentials::*;
 
 pub struct CollisionObject {
     pub enabled: bool,
-    pub id: u32,
+    pub id: usize,
     pub shape: Box<dyn Shape>,
 }
 

@@ -1,16 +1,16 @@
-use super::ContactManifold;
+use super::ContactInformation;
 
 use crate::engine::shapes::Sphere;
 use crate::math::{vector::*, Real, Vec3, P3};
 
-pub fn sphere_sphere(s1: &Sphere, s2: &Sphere) -> ContactManifold {
+pub fn sphere_sphere(s1: &Sphere, s2: &Sphere) -> ContactInformation {
     let a2b = &s2.position - &s1.position;
     let l = magnitude(&a2b);
     let penetration_distance = (l - s1.radius - s2.radius).abs() / (2 as Real);
     let n = a2b / l;
     let p = n * (s1.radius - penetration_distance);
 
-    ContactManifold {
+    ContactInformation {
         points: vec![p],
         normal_a_to_b: n,
         penetration_distance: penetration_distance,

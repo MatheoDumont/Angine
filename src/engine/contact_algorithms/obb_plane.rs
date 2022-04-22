@@ -1,12 +1,12 @@
-use super::ContactManifold;
+use super::ContactInformation;
 use crate::engine::shapes::{Plane, OBB};
 use crate::math::math_essentials::*;
 
-pub fn obb_plane(obb: &OBB, plane: &Plane) -> ContactManifold {
+pub fn obb_plane(obb: &OBB, plane: &Plane) -> ContactInformation {
     let point_to_plane = plane.point_to_plane(&obb.transform.position());
     let direction = normalized(&point_to_plane);
     let p = obb.project_on_contour_in_direction(&direction);
-    ContactManifold {
+    ContactInformation {
         points: vec![p],
         normal_a_to_b: direction,
         penetration_distance: plane.signed_distance(&p).abs(),
