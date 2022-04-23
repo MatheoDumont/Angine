@@ -17,8 +17,8 @@ use crate::math::{Real, Vec3, P3};
 
 use std::rc::Weak;
 pub struct ContactManifold {
-    pub collision_object_a: Weak<CollisionObject>,
-    pub collision_object_b: Weak<CollisionObject>,
+    pub id_collision_object_a: usize,
+    pub id_collision_object_b: usize,
     pub contact_infos: ContactInformation,
 }
 

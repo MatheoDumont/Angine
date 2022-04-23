@@ -36,6 +36,7 @@ impl Rotation {
  *
  *  
  */
+#[derive(Copy, Clone, Debug)]
 pub struct Transform {
     pub rotation: Mat3,
     pub translation: Vec3,

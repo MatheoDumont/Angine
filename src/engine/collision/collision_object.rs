@@ -5,6 +5,7 @@ pub struct CollisionObject {
     pub enabled: bool,
     pub id: usize,
     pub shape: Box<dyn Shape>,
+    pub id_rigid_body: Option<usize>,
 }
 
 impl CollisionObject {
@@ -13,8 +14,7 @@ impl CollisionObject {
             enabled: true,
             id: 0,
             shape: shape,
+            id_rigid_body: None,
         }
     }
-
-    
 }

@@ -1,26 +1,23 @@
 use crate::engine::collision::CollisionObject;
 use crate::math::{math_essentials::*, Mat3, Quaternion};
 
-pub struct RigidBody<'a> {
+pub struct RigidBody {
     linear_velocity: Vec3,
     angular_velocity: Vec3,
     total_force: Vec3,
     total_torque: Vec3,
     translation_moving_axis: Vec3,
     rotation_moving_axis: Vec3,
-    collision_object: &'a CollisionObject,
+    pub collision_object_id: usize,
     inv_inertia_tensor: Mat3,
     mass: Real,
     inv_mass: Real,
-    transform: Transform,
+    pub transform: Transform,
+    pub id: usize,
 }
 
-impl<'a> RigidBody<'a> {
-    pub fn new(
-        transform: Transform,
-        mass: Real,
-        collision_object: &'a CollisionObject,
-    ) -> RigidBody {
+impl RigidBody {
+    pub fn new(transform: Transform, mass: Real) -> RigidBody {
         RigidBody {
             linear_velocity: Vec3::zeros(),
             angular_velocity: Vec3::zeros(),
@@ -28,11 +25,12 @@ impl<'a> RigidBody<'a> {
             total_torque: Vec3::zeros(),
             translation_moving_axis: Vec3::ones(),
             rotation_moving_axis: Vec3::ones(),
-            collision_object,
+            collision_object_id: 0,
             inv_inertia_tensor: Mat3::zero(),
             mass,
             inv_mass: ONE / mass,
             transform,
+            id: 0,
         }
     }
     pub fn integrate_velocities(&mut self, dt: Real) {
@@ -60,10 +58,9 @@ impl<'a> RigidBody<'a> {
      * Inertia tensor slide 44 :
      * https://perso.liris.cnrs.fr/florence.zara/Web/media/files/M2-Animation/Chap4-RigidBody.pdf
      */
-    pub fn update_inertia_tensor(&mut self) {
-        self.inv_inertia_tensor = &self.transform.rotation
-            * self.collision_object.shape.inverse_inertia_matrix()
-            * self.transform.rotation.inverse();
+    pub fn update_inertia_tensor(&mut self, inv_inertia_matrix: Mat3) {
+        self.inv_inertia_tensor =
+            self.transform.rotation * inv_inertia_matrix * self.transform.rotation.inverse();
     }
 
     pub fn apply_central_force(&mut self, force: Vec3) {
