@@ -2,18 +2,19 @@ use crate::engine::collision::CollisionObject;
 use crate::math::{math_essentials::*, Mat3, Quaternion};
 
 pub struct RigidBody {
-    linear_velocity: Vec3,
-    angular_velocity: Vec3,
-    total_force: Vec3,
-    total_torque: Vec3,
-    translation_moving_axis: Vec3,
-    rotation_moving_axis: Vec3,
+    pub linear_velocity: Vec3,
+    pub angular_velocity: Vec3,
+    pub total_force: Vec3,
+    pub total_torque: Vec3,
+    pub translation_moving_axis: Vec3,
+    pub rotation_moving_axis: Vec3,
     pub collision_object_id: usize,
-    inv_inertia_tensor: Mat3,
-    mass: Real,
-    inv_mass: Real,
+    pub inv_inertia_tensor: Mat3,
+    pub mass: Real,
+    pub inv_mass: Real,
     pub transform: Transform,
     pub id: usize,
+    pub restitution_coef: Real,
 }
 
 impl RigidBody {
@@ -31,6 +32,7 @@ impl RigidBody {
             inv_mass: ONE / mass,
             transform,
             id: 0,
+            restitution_coef: ONE, // totalement elastique
         }
     }
     pub fn integrate_velocities(&mut self, dt: Real) {
@@ -82,7 +84,9 @@ impl RigidBody {
     /**
      * an impulse is a force
      */
-    pub fn apply_linear_impulse(&mut self, impulse: Vec3) {}
+    pub fn apply_linear_impulse(&mut self, impulse: Vec3) {
+        self.linear_velocity += impulse * self.inv_mass * self.translation_moving_axis;
+    }
     pub fn apply_angular_impulse(&mut self, impulse: Vec3) {
         self.angular_velocity += self.inv_inertia_tensor * impulse * self.rotation_moving_axis;
     }
