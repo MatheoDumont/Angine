@@ -6,6 +6,7 @@ pub struct CollisionObject {
     pub id: usize,
     pub shape: Box<dyn Shape>,
     pub id_rigid_body: Option<usize>,
+    pub is_static: bool,
 }
 
 impl CollisionObject {
@@ -15,6 +16,7 @@ impl CollisionObject {
             id: 0,
             shape: shape,
             id_rigid_body: None,
+            is_static: false,
         }
     }
 }

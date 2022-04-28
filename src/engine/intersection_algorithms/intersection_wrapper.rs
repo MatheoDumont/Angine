@@ -62,7 +62,7 @@ pub fn get_intersection_fn_by_collisiontypes(
  *
  * Pourquoi on ne passe pas le CollisionObject directement : détail d'implementation, je voulais séparer les données vu
  * qu'on a besoin que de la shape et d'une position, à terme ca pourrait changer si la position se retrouve dans CollisionObject.
- * C'est le genre de détail chiant de conception qui se prévoit mal en amont car j'avais pas une idée claire de à quoi je voulais que ca 
+ * C'est le genre de détail chiant de conception qui se prévoit mal en amont car j'avais pas une idée claire de à quoi je voulais que ca
  * ressemble.
  */
 pub fn swap_normal_orientation(normal: &mut Vec3) {
@@ -170,6 +170,7 @@ fn compute_obb_plane(
         .expect("Tried to downcast to Plane");
 
     if super::obb_plane::obb_plane(o1, o2) {
+        println!("collsion obb plane");
         Some(contact_algorithms::obb_plane(o1, o2))
     } else {
         None
@@ -188,6 +189,8 @@ fn compute_plane_obb(
         .expect("Tried to downcast to OBB");
 
     if super::obb_plane::obb_plane(o2, o1) {
+        println!("collsion plane obb");
+
         let mut ci = contact_algorithms::obb_plane(o2, o1);
         swap_normal_orientation(&mut ci.normal_a_to_b);
         Some(ci)

@@ -40,6 +40,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "000444226fcff248f2bc4c7625be32c63caccfecc2723a2b9f78a7487a49c407"
 
 [[package]]
+name = "angine"
+version = "0.1.0"
+dependencies = [
+ "assert_approx_eq",
+ "downcast-rs",
+ "kiss3d",
+]
+
+[[package]]
 name = "approx"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -470,15 +479,6 @@ name = "either"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
-
-[[package]]
-name = "engine"
-version = "0.1.0"
-dependencies = [
- "assert_approx_eq",
- "downcast-rs",
- "kiss3d",
-]
 
 [[package]]
 name = "fixedbitset"

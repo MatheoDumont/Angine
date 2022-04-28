@@ -10,15 +10,13 @@ pub struct OBB {
     pub vertices: Vec<P3>,
     pub edges: Vec<EdgeIndex>,
     pub faces: Vec<FaceIndex>,
-    pub inertia_matrix: Mat3,
-    pub inv_inertia_matrix: Mat3,
 }
 
 impl Shape for OBB {
     /**
      * source : https://meefi.pedagogie.ec-nantes.fr/meca/lexique/matrices-inertie/Formulaire.htm
      */
-    fn compute_inertia_matrix(&mut self, mass: Real) {
+    fn compute_inertia_matrix(&self, mass: Real) -> Mat3 {
         let x_squared = self.half_side.x() * self.half_side.x() * 4.0;
         let y_squared = self.half_side.y() * self.half_side.y() * 4.0;
         let z_squared = self.half_side.z() * self.half_side.z() * 4.0;
@@ -29,14 +27,9 @@ impl Shape for OBB {
             div * (x_squared + z_squared),
             div * (x_squared + y_squared),
         );
-        self.inertia_matrix = Mat3::diag(diag);
-        self.inv_inertia_matrix = self.inertia_matrix.inverse();
-    }
-    fn inertia_matrix(&self) -> &Mat3 {
-        &self.inertia_matrix
-    }
-    fn inverse_inertia_matrix(&self) -> &Mat3 {
-        &self.inv_inertia_matrix
+        println!("inertia matrix obb = {:?}", Mat3::diag(diag));
+
+        Mat3::diag(diag)
     }
 
     fn shape_type(&self) -> ShapeType {
@@ -53,25 +46,30 @@ impl Shape for OBB {
     fn get_orientation(&self) -> &Mat3 {
         &self.transform.rotation
     }
+
+    fn get_transform(&self) -> Transform {
+        self.transform
+    }
     fn set_position(&mut self, p: P3) {
         self.transform.translation = p;
     }
     fn set_orientation(&mut self, o: Mat3) {
         self.transform.rotation = o;
     }
+
+    fn set_transform(&mut self, t: Transform) {
+        self.transform = t;
+    }
 }
 
 impl OBB {
-    pub fn new(half_side: Vec3, transform: Transform) -> OBB {
+    pub fn new(half_side: Vec3) -> OBB {
         let xl = half_side.x();
         let yl = half_side.y();
         let zl = half_side.z();
-
         OBB {
             half_side,
-            transform,
-            inertia_matrix: Mat3::zero(),
-            inv_inertia_matrix: Mat3::zero(),
+            transform: Transform::identity(),
             vertices: vec![
                 P3::new(xl, yl, zl),    // far top right
                 P3::new(-xl, yl, zl),   // far top left
@@ -326,7 +324,7 @@ mod tests {
     fn OBB_is_inside() {
         // not rotated
         {
-            let obb = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
+            let obb = OBB::new(Vec3::new(ONE, ONE, ONE));
             // not inside
             {
                 let p = P3::new(2 as Real, 2 as Real, 2 as Real);
@@ -343,7 +341,7 @@ mod tests {
                 assert_eq!(obb.is_inside(&p), true);
             }
 
-            let obb = OBB::new(Vec3::new(ONE, ONE, 2.0), Transform::identity());
+            let obb = OBB::new(Vec3::new(ONE, ONE, 2.0));
             // inside
 
             let p = P3::new(0.5, 0.5, 3.0);
@@ -351,10 +349,8 @@ mod tests {
         }
         // rotated
         {
-            let obb = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
-            );
+            let mut obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb.transform = Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4));
             // not inside
             {
                 let p = P3::new(2 as Real, 2 as Real, 2 as Real);
@@ -382,7 +378,7 @@ mod tests {
         {
             // not rotated
             {
-                let obb = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
+                let obb = OBB::new(Vec3::new(ONE, ONE, ONE));
                 let p = obb.project_point_onto_contour_or_inside(&P3::new(1.5, 1.5, ZERO));
                 assert_eq!(p[0], ONE);
                 assert_eq!(p[1], ONE);
@@ -391,10 +387,8 @@ mod tests {
             // rotated
             {
                 {
-                    let obb = OBB::new(
-                        Vec3::new(ONE, ONE, ONE),
-                        Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
-                    );
+                    let mut obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+                    obb.transform = Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4));
 
                     let p = obb.project_point_onto_contour_or_inside(&P3::new(ZERO, 2.0, ZERO));
 
@@ -404,10 +398,8 @@ mod tests {
                 }
 
                 {
-                    let obb = OBB::new(
-                        Vec3::new(ONE, ONE, 2.0),
-                        Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
-                    );
+                    let mut obb = OBB::new(Vec3::new(ONE, ONE, 2.0));
+                    obb.transform = Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4));
                     let p = obb.project_point_onto_contour_or_inside(&P3::new(ZERO, 2.0, 2.0));
 
                     assert_eq!(p[0], ZERO);
@@ -419,29 +411,16 @@ mod tests {
         // project_point_onto_contour_only()
         {
             {
-                let obb = OBB::new(Vec3::new(2.0, ONE, ONE), Transform::identity());
+                let obb = OBB::new(Vec3::new(2.0, ONE, ONE));
                 let p = obb.project_point_onto_contour_only(&P3::new(ONE, ZERO, ZERO));
                 assert_eq!(p[0], 2.0);
                 assert_eq!(p[1], ZERO);
                 assert_eq!(p[2], ZERO);
             }
-            // {
-            //     let obb = OBB::new(
-            //         Vec3::ones(),
-            //         Transform::new(
-            //             Vec3::ones(),
-            //             Rotation::Z(std::f32::consts::FRAC_PI_4),
-            //             Vec3::zeros(),
-            //         ),
-            //     );
-            //     let p = obb.project_point_onto_contour_only(&P3::new(ONE, ZERO, ZERO));
-            //     // assert_eq!(p[0], 2.0);
-            //     // assert_eq!(p[1], ZERO);
-            //     // assert_eq!(p[2], ZERO);
-            // }
+
             // edge
             {
-                let obb = OBB::new(Vec3::value(ONE), Transform::identity());
+                let obb = OBB::new(Vec3::value(ONE));
                 let p = obb.project_on_contour_in_direction(&Vec3::new(ONE, ONE, ZERO));
                 assert_eq!(p[0], ONE);
                 assert_eq!(p[1], ONE);
@@ -449,7 +428,7 @@ mod tests {
             }
             // and direction non normalisé
             {
-                let obb = OBB::new(Vec3::value(ONE), Transform::identity());
+                let obb = OBB::new(Vec3::value(ONE));
                 let p = obb.project_on_contour_in_direction(&Vec3::new(TWO, TWO, ZERO));
                 assert_eq!(p[0], ONE);
                 assert_eq!(p[1], ONE);
@@ -458,7 +437,7 @@ mod tests {
 
             // corner
             {
-                let obb = OBB::new(Vec3::value(ONE), Transform::identity());
+                let obb = OBB::new(Vec3::value(ONE));
                 let p = obb.project_on_contour_in_direction(&Vec3::new(ONE, ONE, ONE));
                 assert_eq!(p[0], ONE);
                 assert_eq!(p[1], ONE);
@@ -467,7 +446,7 @@ mod tests {
 
             // with rectangle
             {
-                let obb = OBB::new(Vec3::new(TWO, ONE, ONE), Transform::identity());
+                let obb = OBB::new(Vec3::new(TWO, ONE, ONE));
                 let p = obb.project_on_contour_in_direction(&Vec3::new(TWO, ONE, ZERO));
                 assert_eq!(p[0], TWO);
                 assert_eq!(p[1], ONE);
@@ -478,10 +457,9 @@ mod tests {
             {
                 let t = Transform::rotation(Rotation::Z(helper::angle_2_rad(45.0)));
                 let pp = t.transform(&P3::new(-ONE, -ONE, -ONE));
-                println!("{:?}", pp);
-                let obb = OBB::new(Vec3::new(ONE, ONE, ONE), t);
+                let mut obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+                obb.transform = t;
                 let p = obb.project_on_contour_in_direction(&Vec3::new(ZERO, -ONE, ZERO));
-                println!("{:?}", p);
 
                 assert_eq!(p[0], pp.x());
                 assert_eq!(p[1], pp.y());
@@ -492,17 +470,15 @@ mod tests {
 
     #[test]
     fn normal_face_test() {
-        let obb = OBB::new(
-            Vec3::new(ONE, ONE, ONE),
-            Transform::new(
-                Vec3::ones(),
-                Rotation::composed(
-                    helper::angle_2_rad(30 as Real),
-                    helper::angle_2_rad(-35 as Real),
-                    helper::angle_2_rad(-45 as Real),
-                ),
-                Vec3::new(1.125 as Real, 0.934 as Real, ZERO),
+        let mut obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+        obb.transform = Transform::new(
+            Vec3::ones(),
+            Rotation::composed(
+                helper::angle_2_rad(30 as Real),
+                helper::angle_2_rad(-35 as Real),
+                helper::angle_2_rad(-45 as Real),
             ),
+            Vec3::new(1.125 as Real, 0.934 as Real, ZERO),
         );
 
         // X+

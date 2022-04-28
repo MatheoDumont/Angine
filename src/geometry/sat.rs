@@ -463,11 +463,9 @@ mod test {
     fn separating_axis_3d() {
         // no intersection
         {
-            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-            let obb2 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::translation(Directions::right() * (3 as Real)),
-            );
+            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            let mut obb2 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb2.transform = Transform::translation(Directions::right() * (3 as Real));
 
             let r = sat_3D(&obb1, &obb2);
             assert!(r.is_none());
@@ -475,14 +473,10 @@ mod test {
 
         // oriented
         {
-            let obb1 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
-            );
-            let obb2 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::translation(Directions::right()),
-            );
+            let mut obb1 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb1.transform = Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4));
+            let mut obb2 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb2.transform = Transform::translation(Directions::right());
             let r = sat_3D(&obb1, &obb2);
 
             assert!(r.is_some());
@@ -490,11 +484,9 @@ mod test {
 
         // vertex touching
         {
-            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-            let obb2 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::translation(Vec3::new(ONE, ONE, ONE)),
-            );
+            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            let mut obb2 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb2.transform = Transform::translation(Vec3::new(ONE, ONE, ONE));
             let r = sat_3D(&obb1, &obb2);
 
             assert!(r.is_some());
@@ -502,11 +494,9 @@ mod test {
 
         // edge touching
         {
-            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-            let obb2 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::translation(Vec3::new(ONE, ONE, ZERO)),
-            );
+            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            let mut obb2 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb2.transform = Transform::translation(Vec3::new(ONE, ONE, ZERO));
             let r = sat_3D(&obb1, &obb2);
 
             assert!(r.is_some());
@@ -514,47 +504,41 @@ mod test {
 
         // face touching
         {
-            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-            let obb2 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::translation(Directions::right() * (2 as Real)),
-            );
+            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            let mut obb2 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb2.transform = Transform::translation(Directions::right() * (2 as Real));
             let r = sat_3D(&obb1, &obb2);
             assert!(r.is_some());
         }
 
         // intersection between an edge of A and an edge of B without either of the vertices of A or B penetrating the other shape (A/B)
         {
-            let obb1 = OBB::new(Vec3::new(0.5, 0.5, 0.5), Transform::identity());
-            let obb2 = OBB::new(
-                Vec3::new(0.5, 0.5, 0.5),
-                Transform::new(
-                    Vec3::ones(),
-                    Rotation::composed(
-                        helper::angle_2_rad(-30 as Real),
-                        helper::angle_2_rad(35 as Real),
-                        helper::angle_2_rad(45 as Real),
-                    ),
-                    Vec3::new(1 as Real, 0.9 as Real, ZERO),
+            let obb1 = OBB::new(Vec3::new(0.5, 0.5, 0.5));
+            let mut obb2 = OBB::new(Vec3::new(0.5, 0.5, 0.5));
+            obb2.transform = Transform::new(
+                Vec3::ones(),
+                Rotation::composed(
+                    helper::angle_2_rad(-30 as Real),
+                    helper::angle_2_rad(35 as Real),
+                    helper::angle_2_rad(45 as Real),
                 ),
+                Vec3::new(1 as Real, 0.9 as Real, ZERO),
             );
             let r = sat_3D(&obb1, &obb2);
             assert!(r.is_some());
         }
 
         {
-            let obb1 = OBB::new(Vec3::new(0.5, 0.5, 0.5), Transform::identity());
-            let obb2 = OBB::new(
-                Vec3::new(0.5, 0.5, 0.5),
-                Transform::new(
-                    Vec3::ones(),
-                    Rotation::composed(
-                        helper::angle_2_rad(30 as Real),
-                        helper::angle_2_rad(-35 as Real),
-                        helper::angle_2_rad(-45 as Real),
-                    ),
-                    Vec3::new(1.2 as Real, 1.2 as Real, ZERO),
+            let obb1 = OBB::new(Vec3::new(0.5, 0.5, 0.5));
+            let mut obb2 = OBB::new(Vec3::new(0.5, 0.5, 0.5));
+            obb2.transform = Transform::new(
+                Vec3::ones(),
+                Rotation::composed(
+                    helper::angle_2_rad(30 as Real),
+                    helper::angle_2_rad(-35 as Real),
+                    helper::angle_2_rad(-45 as Real),
                 ),
+                Vec3::new(1.2 as Real, 1.2 as Real, ZERO),
             );
             let r = sat_3D(&obb1, &obb2);
             assert!(r.is_none());

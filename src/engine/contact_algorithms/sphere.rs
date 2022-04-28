@@ -20,11 +20,13 @@ pub fn sphere_sphere(s1: &Sphere, s2: &Sphere) -> ContactInformation {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::engine::shapes::Shape;
     use crate::math::{ONE, ZERO};
     #[test]
     fn sphere_sphere_point_intersection() {
-        let s1 = Sphere::new(2 as Real, P3::origin());
-        let s2 = Sphere::new(1.5 as Real, P3::new(3 as Real, ZERO, ZERO));
+        let s1 = Sphere::new(2 as Real);
+        let mut s2 = Sphere::new(1.5 as Real);
+        s2.set_position(P3::new(3 as Real, ZERO, ZERO));
 
         let cm = sphere_sphere(&s1, &s2);
 

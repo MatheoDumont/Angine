@@ -15,7 +15,7 @@ impl Vector3 {
     }
 
     pub fn from_array(data: [Real; 3]) -> Vector3 {
-        Vector3 { data }
+        Vector3 { data   }
     }
 
     pub fn value(v: Real) -> Vector3 {

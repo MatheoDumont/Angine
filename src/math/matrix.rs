@@ -215,6 +215,13 @@ impl IndexMut<usize> for Mat3 {
     }
 }
 
+impl PartialEq for Mat3 {
+    fn eq(&self, other: &Self) -> bool {
+        self.row(0) == other.row(0) && self.row(1) == other.row(1) && self.row(2) == other.row(2)
+    }
+}
+impl Eq for Mat3 {}
+
 #[rustfmt::skip]
 impl Mul for &Mat3 {
     type Output = Mat3;

@@ -16,34 +16,36 @@ mod tests {
     fn obb_sphere_intersection() {
         // no intersection
         {
-            let obb = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-            let sphere = Sphere::new(ONE, P3::new(3 as Real, ZERO, ZERO));
+            let obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+            let mut sphere = Sphere::new(ONE);
+            sphere.position = P3::new(3 as Real, ZERO, ZERO);
 
             assert_eq!(obb_sphere(&obb, &sphere), false);
         }
         // intersection contour
         {
-            let obb = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-            let sphere = Sphere::new(ONE, P3::new(2 as Real, ZERO, ZERO));
+            let obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+            let mut sphere = Sphere::new(ONE);
+            sphere.position = P3::new(2 as Real, ZERO, ZERO);
 
             assert_eq!(obb_sphere(&obb, &sphere), true);
         }
 
         // intersection
         {
-            let obb = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-            let sphere = Sphere::new(ONE, P3::new(1.5 as Real, ZERO, ZERO));
+            let obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+            let mut sphere = Sphere::new(ONE);
+            sphere.position = P3::new(1.5 as Real, ZERO, ZERO);
 
             assert_eq!(obb_sphere(&obb, &sphere), true);
         }
         // rotated
         {
-            let obb = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
-            );
-            let sphere = Sphere::new(ONE, P3::new(1.5 as Real, ZERO, ZERO));
-
+            let mut obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb.transform = Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4));
+            let mut sphere = Sphere::new(ONE);
+            sphere.position = P3::new(1.5 as Real, ZERO, ZERO);
+            
             assert_eq!(obb_sphere(&obb, &sphere), true);
         }
     }

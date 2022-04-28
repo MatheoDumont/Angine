@@ -44,77 +44,68 @@ mod tests {
     fn obb_obb_intersection() {
         // no intersection
         {
-            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-            let obb2 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::translation(Directions::right() * (3 as Real)),
-            );
+            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            let mut obb2 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb2.transform = Transform::translation(Directions::right() * (3 as Real));
+
             assert_eq!(obb_obb(&obb1, &obb2), false);
         }
         // intersection on contour
         {
-            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-            let obb2 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::translation(Directions::right() * (2 as Real)),
-            );
+            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            let mut obb2 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb2.transform = Transform::translation(Directions::right() * (2 as Real));
+
             assert_eq!(obb_obb(&obb1, &obb2), true);
         }
         // big intersect
         {
-            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE), Transform::identity());
-            let obb2 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::translation(Directions::right()),
-            );
+            let obb1 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            let mut obb2 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb2.transform = Transform::translation(Directions::right());
+
             assert_eq!(obb_obb(&obb1, &obb2), true);
         }
 
         // oriented
         {
-            let obb1 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4)),
-            );
-            let obb2 = OBB::new(
-                Vec3::new(ONE, ONE, ONE),
-                Transform::translation(Directions::right()),
-            );
+            let mut obb1 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb1.transform = Transform::rotation(Rotation::Z(std::f32::consts::FRAC_PI_4));
+            let mut obb2 = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb2.transform = Transform::translation(Directions::right());
+
             assert_eq!(obb_obb(&obb1, &obb2), true);
         }
 
         // intersection between an edge of A and an edge of B without either of the vertices of A or B penetrating the other shape (A/B)
         {
-            let obb1 = OBB::new(Vec3::new(0.5, 0.5, 0.5), Transform::identity());
-            let obb2 = OBB::new(
-                Vec3::new(0.5, 0.5, 0.5),
-                Transform::new(
-                    Vec3::ones(),
-                    Rotation::composed(
-                        helper::angle_2_rad(30 as Real),
-                        helper::angle_2_rad(-35 as Real),
-                        helper::angle_2_rad(-45 as Real),
-                    ),
-                    Vec3::new(1 as Real, 0.9 as Real, ZERO),
+            let obb1 = OBB::new(Vec3::new(0.5, 0.5, 0.5));
+            let mut obb2 = OBB::new(Vec3::new(0.5, 0.5, 0.5));
+            obb2.transform = Transform::new(
+                Vec3::ones(),
+                Rotation::composed(
+                    helper::angle_2_rad(30 as Real),
+                    helper::angle_2_rad(-35 as Real),
+                    helper::angle_2_rad(-45 as Real),
                 ),
+                Vec3::new(1 as Real, 0.9 as Real, ZERO),
             );
+
             assert_eq!(obb_obb(&obb1, &obb2), true);
             assert_eq!(obb_obb(&obb2, &obb1), true);
         }
 
         {
-            let obb1 = OBB::new(Vec3::new(0.5, 0.5, 0.5), Transform::identity());
-            let obb2 = OBB::new(
-                Vec3::new(0.5, 0.5, 0.5),
-                Transform::new(
-                    Vec3::ones(),
-                    Rotation::composed(
-                        helper::angle_2_rad(-30 as Real),
-                        helper::angle_2_rad(35 as Real),
-                        helper::angle_2_rad(45 as Real),
-                    ),
-                    Vec3::new(1 as Real, 0.9 as Real, ZERO),
+            let obb1 = OBB::new(Vec3::new(0.5, 0.5, 0.5));
+            let mut obb2 = OBB::new(Vec3::new(0.5, 0.5, 0.5));
+            obb2.transform = Transform::new(
+                Vec3::ones(),
+                Rotation::composed(
+                    helper::angle_2_rad(-30 as Real),
+                    helper::angle_2_rad(35 as Real),
+                    helper::angle_2_rad(45 as Real),
                 ),
+                Vec3::new(1 as Real, 0.9 as Real, ZERO),
             );
             assert_eq!(obb_obb(&obb1, &obb2), true);
             assert_eq!(obb_obb(&obb2, &obb1), true);

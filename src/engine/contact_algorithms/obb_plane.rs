@@ -1,5 +1,5 @@
 use super::ContactInformation;
-use crate::engine::shapes::{Plane, OBB};
+use crate::engine::shapes::{Plane, Shape, OBB};
 use crate::math::math_essentials::*;
 
 pub fn obb_plane(obb: &OBB, plane: &Plane) -> ContactInformation {
@@ -20,11 +20,9 @@ mod tests {
     #[test]
     fn test_obb_plane_contact() {
         {
-            let obb = OBB::new(
-                Vec3::value(ONE),
-                Transform::translation(Vec3::new(ZERO, 0.5, ZERO)),
-            );
-            let plane = Plane::new(Directions::up(), Vec3::origin());
+            let mut obb = OBB::new(Vec3::value(ONE));
+            obb.transform = Transform::translation(Vec3::new(ZERO, 0.5, ZERO));
+            let plane = Plane::new(Directions::up());
 
             let res = obb_plane(&obb, &plane);
             assert_eq!(res.points[0].x(), ZERO);
@@ -38,9 +36,10 @@ mod tests {
 
             let p = t.transform(&p);
 
-            let obb = OBB::new(Vec3::value(ONE), t);
+            let mut obb = OBB::new(Vec3::value(ONE));
+            obb.transform = t;
 
-            let plane = Plane::new(Directions::up(), Vec3::origin());
+            let plane = Plane::new(Directions::up());
 
             let res = obb_plane(&obb, &plane);
 

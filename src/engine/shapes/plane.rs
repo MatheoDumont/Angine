@@ -5,13 +5,11 @@ use crate::math::{math_essentials::*, Mat3};
 pub struct Plane {
     pub normal: Vec3,
     pub distance_from_origin: Real,
-    pub transform: Transform,
-    pub inertia_matrix: Mat3,
-    pub inv_inertia_matrix: Mat3,
+    transform: Transform,
 }
 
 impl Plane {
-    pub fn new(normal: Vec3, position: P3) -> Plane {
+    pub fn new(normal: Vec3) -> Plane {
         #[cfg(debug_assertions)]
         let m = magnitude(&normal);
         let mut normal = normal;
@@ -21,10 +19,8 @@ impl Plane {
 
         Plane {
             normal: normal,
-            distance_from_origin: magnitude(&position),
-            transform: Transform::translation(position),
-            inertia_matrix: Mat3::identity(),
-            inv_inertia_matrix: Mat3::identity(),
+            distance_from_origin: ZERO,
+            transform: Transform::identity(),
         }
     }
 
@@ -40,10 +36,13 @@ impl Plane {
             midpoint[2] += p[2];
         }
         let size = face.v_i.len() as Real;
-        Plane::new(
-            polyhedron.face_normal(face_idx),
-            P3::new(midpoint[0] / size, midpoint[1] / size, midpoint[2] / size),
-        )
+        let mut p = Plane::new(polyhedron.face_normal(face_idx));
+        p.set_position(P3::new(
+            midpoint[0] / size,
+            midpoint[1] / size,
+            midpoint[2] / size,
+        ));
+        p
     }
 
     /**
@@ -51,27 +50,25 @@ impl Plane {
      * Negative distance if p is in the opposite direction  
      * 0 if on
      */
-    pub fn signed_distance(&self, v: &Vector3) -> Real {
-        dot(&self.normal, &v) - self.distance_from_origin
+    pub fn signed_distance(&self, p: &P3) -> Real {
+        let ap = p - &self.transform.position();
+        dot(&self.normal, &ap)
     }
 
     pub fn point_to_plane(&self, v: &P3) -> Vec3 {
         // rejection en prennant en compte la distance au plan
         -self.normal * (dot(&self.normal, v) - self.distance_from_origin)
     }
+
+    fn compute_distance_from_origin(&mut self) {
+        self.distance_from_origin = magnitude(&self.transform.translation);
+    }
 }
 
 impl Shape for Plane {
-    fn compute_inertia_matrix(&mut self, mass: Real) {
+    fn compute_inertia_matrix(&self, mass: Real) -> Mat3 {
         // pour l'instant
         panic!("inertia matrix for Plane not implemented");
-    }
-
-    fn inertia_matrix(&self) -> &Mat3 {
-        &self.inertia_matrix
-    }
-    fn inverse_inertia_matrix(&self) -> &Mat3 {
-        &self.inv_inertia_matrix
     }
 
     fn shape_type(&self) -> ShapeType {
@@ -90,9 +87,18 @@ impl Shape for Plane {
     }
     fn set_position(&mut self, p: P3) {
         self.transform.translation = p;
+        self.compute_distance_from_origin();
     }
     fn set_orientation(&mut self, o: Mat3) {
         self.transform.rotation = o;
+    }
+
+    fn get_transform(&self) -> Transform {
+        self.transform
+    }
+    fn set_transform(&mut self, t: Transform) {
+        self.transform = t;
+        self.compute_distance_from_origin();
     }
 }
 
@@ -105,46 +111,43 @@ mod tests {
     #[test]
     fn plane_signed_distance() {
         {
-            let plan = Plane::new(Directions::up(), P3::new(ZERO, ONE, ZERO));
+            let mut plan = Plane::new(Directions::up());
+            plan.transform.translation = P3::new(ZERO, ONE, ZERO);
             let p = P3::new(ZERO, 2 as Real, ZERO);
 
             assert_approx_eq!(plan.signed_distance(&p), ONE, 1.0e-6);
         }
 
         {
-            let plan = Plane::new(Directions::up(), P3::new(ZERO, ONE, ZERO));
+            let mut plan = Plane::new(Directions::up());
+            plan.transform.translation = P3::new(ZERO, ONE, ZERO);
             let p = P3::new(ZERO, -ONE, ZERO);
 
             assert_approx_eq!(plan.signed_distance(&p), -2 as Real, 1.0e-6);
         }
 
         {
-            let plan = Plane::new(Directions::up(), P3::origin());
+            let plan = Plane::new(Directions::up());
             let p = P3::new(1.5, 1.0, 1.0);
 
             assert_approx_eq!(plan.signed_distance(&p), dot(&p, &plan.normal), 1.0e-6);
         }
 
         {
-            let plan = Plane::new(
-                Rotation::Y(std::f32::consts::FRAC_PI_4) * Directions::right(),
-                // P3::new(ZERO, ZERO, ONE),
-                P3::origin(),
-            );
+            let plan = Plane::new(Rotation::Y(std::f32::consts::FRAC_PI_4) * Directions::right());
             let p = P3::new(ZERO, ZERO, -ONE);
-            println!("{:?}", plan.normal);
             assert_approx_eq!(plan.signed_distance(&p), dot(&p, &plan.normal), 1.0e-6);
         }
 
         {
-            let plan = Plane::new(Directions::up(), P3::origin());
+            let plan = Plane::new(Directions::up());
             let p = P3::from(Directions::up());
 
             assert_approx_eq!(plan.signed_distance(&p), ONE, 1.0e-6);
         }
 
         {
-            let plan = Plane::new(Directions::up(), P3::origin());
+            let plan = Plane::new(Directions::up());
             let p = P3::origin();
 
             assert_approx_eq!(plan.signed_distance(&p), ZERO, 1.0e-6);

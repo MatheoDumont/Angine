@@ -14,12 +14,13 @@ pub fn plane_plane(pl1: &Plane, pl2: &Plane) -> bool {
 mod tests {
     use super::plane_plane;
     use crate::engine::shapes::Plane;
+    use crate::engine::shapes::Shape;
     use crate::math::math_essentials::*;
     #[test]
     fn plane_plane_intersection() {
         {
-            let pl1 = Plane::new(Directions::up(), P3::origin());
-            let mut pl2 = Plane::new(Directions::up(), P3::origin());
+            let pl1 = Plane::new(Directions::up());
+            let mut pl2 = Plane::new(Directions::up());
 
             assert_eq!(plane_plane(&pl1, &pl2), true);
 
@@ -28,11 +29,10 @@ mod tests {
         }
 
         {
-            let pl1 = Plane::new(Directions::up(), P3::origin());
-            let pl2 = Plane::new(
-                normalized(&Vec3::new(ONE, ONE, ZERO)),
-                P3::new(ZERO, ONE, ZERO),
-            );
+            let pl1 = Plane::new(Directions::up());
+            let mut pl2 = Plane::new(normalized(&Vec3::new(ONE, ONE, ZERO)));
+            pl2.set_position(P3::new(ZERO, ONE, ZERO));
+
             assert_eq!(plane_plane(&pl1, &pl2), true);
         }
     }

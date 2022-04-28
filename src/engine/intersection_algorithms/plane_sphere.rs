@@ -18,29 +18,33 @@ mod tests {
     fn plane_sphere_intersection() {
         // no intersection
         {
-            let s = Sphere::new(ONE, P3::new(ZERO, 2 as Real, ZERO));
-            let pl = Plane::new(Directions::up(), P3::origin());
+            let mut s = Sphere::new(ONE);
+            s.position = P3::new(ZERO, 2 as Real, ZERO);
+            let pl = Plane::new(Directions::up());
 
             assert_eq!(plane_sphere(&pl, &s), false);
         }
         // intersection
         {
-            let s = Sphere::new(ONE, P3::new(ZERO, ONE, ZERO));
-            let pl = Plane::new(Directions::up(), P3::origin());
+            let mut s = Sphere::new(ONE);
+            s.position = P3::new(ZERO, ONE, ZERO);
+            let pl = Plane::new(Directions::up());
 
             assert_eq!(plane_sphere(&pl, &s), true);
         }
 
         {
-            let s = Sphere::new(ONE, P3::new(ZERO, -ONE, ZERO));
-            let pl = Plane::new(Directions::up(), P3::origin());
+            let mut s = Sphere::new(ONE);
+            s.position = P3::new(ZERO, -ONE, ZERO);
+            let pl = Plane::new(Directions::up());
 
             assert_eq!(plane_sphere(&pl, &s), true);
         }
 
         {
-            let s = Sphere::new(ONE, P3::new(ZERO, ONE, ZERO));
-            let pl = Plane::new(Vec3::new(ONE, ONE, ZERO), P3::origin());
+            let mut s = Sphere::new(ONE);
+            s.position = P3::new(ZERO, ONE, ZERO);
+            let pl = Plane::new(Vec3::new(ONE, ONE, ZERO));
 
             assert_eq!(plane_sphere(&pl, &s), true);
         }
