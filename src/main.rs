@@ -10,6 +10,7 @@ use angine::engine::{
 use angine::math::math_essentials::*;
 use angine::math::Quaternion as AngineQuat;
 
+use kiss3d::event::{Action, Key, WindowEvent};
 use kiss3d::light::Light;
 use kiss3d::nalgebra::{Quaternion, Translation3, UnitQuaternion};
 use kiss3d::window::Window;
@@ -34,11 +35,11 @@ pub fn update_state(
 
 fn main() {
     // Simulation related
-    let mut simulation_world = SimulationWorld::new(1.0 / 60.0);
+    let mut simulation_world = SimulationWorld::new(None);
     // add a cube
     let half_length = Vec3::new(1.0, 1.0, 1.0);
     let obb_co = CollisionObject::new(Box::new(shapes::OBB::new(half_length.clone())));
-    let obb_rb = RigidBody::new(Transform::identity(), 1.0, false);
+    let obb_rb = RigidBody::new(Transform::translation(P3::new(0.0, -9.0, 0.0)), 1.0, false);
     let obb_id = simulation_world.add_rigidbody(obb_rb, obb_co);
     // add a plane
     let plane_co = CollisionObject::new(Box::new(shapes::Plane::new(Directions::up())));
@@ -63,10 +64,16 @@ fn main() {
     );
     plane.append_rotation(&unit_q);
     plane.set_color(0.0, 1.0, 0.0);
+    update_state(
+        &mut cube,
+        simulation_world.rigidbody_ref(obb_id),
+        UnitQuaternion::<f32>::identity(),
+    );
+    update_state(&mut plane, simulation_world.rigidbody_ref(plane_id), unit_q);
 
     window.set_light(Light::StickToCamera);
-
-    loop {
+    let mut pause = true;
+    let mut step = || {
         let t_start = std::time::Instant::now();
         simulation_world.discrete_step();
         update_state(
@@ -79,10 +86,31 @@ fn main() {
         let elapsed = t_start.elapsed();
         let i = std::cmp::min(16 as u32, elapsed.as_millis() as u32);
         let i = std::cmp::max(i, 0 as u32);
-        // angine transform object
+        std::thread::sleep_ms(16 - i);
+    };
+    loop {
+        if !pause {
+            step();
+        }
+
         if !window.render() {
             break;
         }
-        std::thread::sleep_ms(16 - i);
+
+        for e in window.events().iter() {
+            match e.value {
+                WindowEvent::Key(p, Action::Release, _) => match p {
+                    Key::P => {
+                        pause = !pause;
+                    }
+                    Key::N => {
+                        step();
+                    }
+                    Key::R => {}
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
     }
 }

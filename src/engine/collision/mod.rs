@@ -57,13 +57,41 @@ impl CollisionWorld {
         }
     }
 
+    /**
+     * No checks on the ids provided
+     */
+    pub fn are_colliding(
+        &self,
+        id1_collision_object: usize,
+        id2_collision_object: usize,
+    ) -> Option<ContactManifold> {
+        let shape_i = &self
+            .collision_objects
+            .get(&id1_collision_object)
+            .unwrap()
+            .shape;
+        let shape_j = &self
+            .collision_objects
+            .get(&id2_collision_object)
+            .unwrap()
+            .shape;
+
+        let algo = get_intersection_fn_by_collisiontypes(shape_i, shape_j)?;
+        let contact_infos = algo(shape_i, shape_j)?;
+        let cm = ContactManifold {
+            id_collision_object_a: id1_collision_object,
+            id_collision_object_b: id2_collision_object,
+            contact_infos,
+        };
+        Some(cm)
+    }
+
     pub fn step(&mut self) {
         for (i1, el1) in self.collision_objects.iter().enumerate() {
             let obj_i = el1.1;
             if !obj_i.enabled {
                 continue;
             }
-            let shape_i = &obj_i.shape;
 
             for el2 in self.collision_objects.iter().nth(i1 + 1) {
                 let obj_j = el2.1;
@@ -71,16 +99,8 @@ impl CollisionWorld {
                     continue;
                 }
 
-                let shape_j = &obj_j.shape;
-                if let Some(algo) = get_intersection_fn_by_collisiontypes(shape_i, shape_j) {
-                    if let Some(contact_infos) = algo(shape_i, shape_j) {
-                        let cm = ContactManifold {
-                            id_collision_object_a: *el1.0,
-                            id_collision_object_b: *el2.0,
-                            contact_infos,
-                        };
-                        self.contact_manifolds.push(cm);
-                    }
+                if let Some(cm) = self.are_colliding(obj_i.id, obj_j.id) {
+                    self.contact_manifolds.push(cm);
                 }
             }
         }

@@ -55,9 +55,12 @@ impl Plane {
         dot(&self.normal, &ap)
     }
 
-    pub fn point_to_plane(&self, v: &P3) -> Vec3 {
+    /**
+     * Reject le point sur le plan
+     */
+    pub fn reject_point_on_plane(&self, p: &P3) -> Vec3 {
         // rejection en prennant en compte la distance au plan
-        -self.normal * (dot(&self.normal, v) - self.distance_from_origin)
+        rejection(&self.normal, &p) + projection(&self.normal, self.get_position())
     }
 
     fn compute_distance_from_origin(&mut self) {
@@ -105,6 +108,7 @@ impl Shape for Plane {
 #[cfg(test)]
 mod tests {
     use super::Plane;
+    use crate::engine::shapes::Shape;
     use crate::math::{math_essentials::*, Mat3};
     use assert_approx_eq::assert_approx_eq;
 
@@ -151,6 +155,51 @@ mod tests {
             let p = P3::origin();
 
             assert_approx_eq!(plan.signed_distance(&p), ZERO, 1.0e-6);
+        }
+    }
+
+    #[test]
+    fn test_reject_point_on_plane() {
+        {
+            let p = P3::new(1.0, 2.0, 3.0);
+            let plane = Plane::new(Directions::up());
+
+            let r = plane.reject_point_on_plane(&p);
+            assert_eq!(r.x(), 1.0);
+            assert_eq!(r.y(), 0.0);
+            assert_eq!(r.z(), 3.0);
+        }
+
+        {
+            let p = P3::new(1.0, 2.0, 3.0);
+            let plane = Plane::new(Directions::right());
+
+            let r = plane.reject_point_on_plane(&p);
+            assert_eq!(r.x(), 0.0);
+            assert_eq!(r.y(), 2.0);
+            assert_eq!(r.z(), 3.0);
+        }
+
+        {
+            let p = P3::new(1.0, 2.0, 3.0);
+            let mut plane = Plane::new(Directions::right());
+            plane.set_transform(Transform::translation(Directions::right() * -3.0));
+
+            let r = plane.reject_point_on_plane(&p);
+            assert_eq!(r.x(), -3.0);
+            assert_eq!(r.y(), 2.0);
+            assert_eq!(r.z(), 3.0);
+        }
+
+        {
+            let p = P3::new(1.0, 2.0, 3.0);
+            let mut plane = Plane::new(-Directions::up());
+            plane.set_transform(Transform::translation(Directions::up() * 3.0));
+
+            let r = plane.reject_point_on_plane(&p);
+            assert_eq!(r.x(), 1.0);
+            assert_eq!(r.y(), 3.0);
+            assert_eq!(r.z(), 3.0);
         }
     }
 }

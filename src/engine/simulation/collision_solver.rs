@@ -1,3 +1,4 @@
+use super::consts;
 use super::RigidBody;
 use crate::engine::collision::{CollisionObject, CollisionWorld};
 use crate::engine::contact_algorithms::{ContactInformation, ContactManifold};
@@ -29,8 +30,8 @@ pub fn compute_amps_moving_objects(
     let t = rel_velocity_normal / div;
 
     (
-        helper::max(-(ONE + rb1.restitution_coef) * t, ZERO), // j1
-        helper::max(-(ONE + rb2.restitution_coef) * t, ZERO), // j2
+        helper::max((ONE + rb1.restitution_coef) * t, ZERO), // j1
+        helper::max((ONE + rb2.restitution_coef) * t, ZERO), // j2
     )
 }
 
@@ -39,39 +40,44 @@ pub fn compute_amps_one_moving_object(
     rb_center2collisionpoint: &Vec3,
     normal: &Vec3,
 ) -> Real {
-    let rb2_inv_inertia_tensor = Mat3::diag(Vec3::value(100.0));
-    let div = (rb.inv_mass() + 1.0 / 1000.0)
+    let div = rb.inv_mass()
         + dot(
-            &(cross(
+            &cross(
                 &(rb.inv_inertia_tensor() * &cross(&rb_center2collisionpoint, &normal)),
                 &rb_center2collisionpoint,
-            ) + cross(
-                &(rb2_inv_inertia_tensor * cross(&Directions::up(), &normal)),
-                &Directions::up(),
-            )),
+            ),
             &normal,
         );
+
     let rel_velocity = rb.linear_velocity + cross(&rb.angular_velocity, &rb_center2collisionpoint);
 
     let rel_velocity_normal = dot(&rel_velocity, &normal);
-    let t = rel_velocity_normal / div;
+    println!(
+        "div={:?} rel_velocity={:?} rel_velo_normal={:?}",
+        div, rel_velocity, rel_velocity_normal
+    );
+    helper::max(
+        (ONE + rb.restitution_coef) * rel_velocity_normal / div,
+        ZERO,
+    )
+}
 
-    helper::max(-(ONE + rb.restitution_coef) * t, ZERO) // j1
+pub fn compensate_no_speed_one_moving(
+    rb: &mut RigidBody,
+    rb_center2collisionpoint: &Vec3,
+    normal: &Vec3,
+    penetration_distance: Real,
+) -> Real {
+    let rel_velocity = rb.linear_velocity + cross(&rb.angular_velocity, &rb_center2collisionpoint);
 
-    // let div = rb.inv_mass
-    //     + dot(
-    //         &cross(
-    //             &(rb.inv_inertia_tensor() * &cross(&center2collisionpoint, &normal)),
-    //             &center2collisionpoint,
-    //         ),
-    //         &normal,
-    //     );
+    let gravity_direction = -Directions::up();
+    let rel_velocity_gravity = dot(&rel_velocity, &gravity_direction);
 
-    // let rel_velocity = rb.linear_velocity + cross(&rb.angular_velocity, &center2collisionpoint);
-
-    // let rel_velocity_normal = dot(&rel_velocity, &normal);
-    // helper::min(
-    //     -(ONE + rb.restitution_coef) * rel_velocity_normal / div,
-    //     ZERO,
-    // )
+    // hand picked const
+    if rel_velocity_gravity < 0.2 {
+        // rb.apply_displacement(-normal * penetration_distance);
+        consts::GRAVITY_INTEGRATED
+    } else {
+        0.0
+    }
 }

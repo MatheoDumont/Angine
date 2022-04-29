@@ -1,3 +1,4 @@
+use super::consts;
 use crate::engine::collision::CollisionObject;
 use crate::math::{math_essentials::*, Mat3, Quaternion};
 
@@ -18,6 +19,8 @@ pub struct RigidBody {
     pub id: usize,
     pub restitution_coef: Real,
     pub is_static: bool,
+    center_of_mass: P3,
+    local_center_of_mass: P3,
 }
 
 impl RigidBody {
@@ -44,9 +47,14 @@ impl RigidBody {
             inv_mass: ONE / mass,
             transform,
             id: 0,
-            restitution_coef: ONE, // totalement elastique
+            restitution_coef: 0.5,
             is_static,
+            center_of_mass: transform.translation,
+            local_center_of_mass: P3::origin(),
         }
+    }
+    pub fn center_of_mass(&self) -> &P3 {
+        &self.center_of_mass
     }
 
     /**
@@ -77,7 +85,7 @@ impl RigidBody {
         self.transform.rotation * self.inertia_matrix * self.transform.rotation.inverse()
     }
     pub fn inv_inertia_tensor(&self) -> &Mat3 {
-        &self.inv_inertia_tensor()
+        &self.inv_inertia_tensor
     }
 
     pub fn link_and_set_collision_object(&mut self, co: &mut CollisionObject) {
@@ -86,6 +94,7 @@ impl RigidBody {
         self.collision_object_id = Some(co.id);
         co.shape.set_transform(self.transform.clone());
         if !self.is_static {
+            // self.local_center_of_mass = ...
             self.inertia_matrix = co.shape.compute_inertia_matrix(self.mass);
             self.inv_inertia_matrix = self.inertia_matrix.inverse();
         }
@@ -115,6 +124,7 @@ impl RigidBody {
      */
     pub fn integrate_state(&mut self, dt: Real) {
         self.transform.translation += self.linear_velocity * dt;
+        self.center_of_mass = self.local_center_of_mass + self.transform.translation;
 
         // Quaternion derivative
         let q = Quaternion::from_mat3(&self.transform.rotation);
@@ -140,7 +150,7 @@ impl RigidBody {
     }
 
     pub fn apply_gravity(&mut self) {
-        self.apply_force(-Directions::up() * 9.81 * self.mass);
+        self.apply_central_force(consts::GRAVITY_VECTOR * self.mass);
     }
     /**
      * an impulse is a force
@@ -150,5 +160,12 @@ impl RigidBody {
     }
     pub fn apply_angular_impulse(&mut self, impulse: Vec3) {
         self.angular_velocity += self.inv_inertia_tensor * impulse * self.rotation_moving_axis;
+    }
+
+    /**
+     * Useful when in contact, without integrating speed
+     */
+    pub fn apply_displacement(&mut self, translation: Vec3) {
+        self.transform.translation += translation;
     }
 }

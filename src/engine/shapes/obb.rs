@@ -27,7 +27,6 @@ impl Shape for OBB {
             div * (x_squared + z_squared),
             div * (x_squared + y_squared),
         );
-        println!("inertia matrix obb = {:?}", Mat3::diag(diag));
 
         Mat3::diag(diag)
     }

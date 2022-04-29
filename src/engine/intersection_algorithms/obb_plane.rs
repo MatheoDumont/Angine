@@ -8,12 +8,6 @@ pub fn obb_plane(obb: &OBB, plane: &Plane) -> bool {
     let closest_distance = obb.half_side.x() * dot(&plane.normal, &rotation.row(0)).abs()
         + obb.half_side.y() * dot(&plane.normal, &rotation.row(1)).abs()
         + obb.half_side.z() * dot(&plane.normal, &rotation.row(2)).abs();
-    println!(
-        "{:?} {:?} {:?}",
-        dot(&plane.normal, &obb.transform.translation),
-        plane.signed_distance(&obb.transform.translation),
-        closest_distance
-    );
     plane.signed_distance(&obb.transform.translation).abs() <= closest_distance
 }
 

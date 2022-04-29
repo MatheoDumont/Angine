@@ -6,7 +6,7 @@ use std::ops::{
 
 #[derive(Copy, Clone, Debug)]
 pub struct Vector3 {
-    data: [Real; 3],
+    pub data: [Real; 3],
 }
 
 impl Vector3 {
@@ -15,7 +15,7 @@ impl Vector3 {
     }
 
     pub fn from_array(data: [Real; 3]) -> Vector3 {
-        Vector3 { data   }
+        Vector3 { data }
     }
 
     pub fn value(v: Real) -> Vector3 {
@@ -86,7 +86,7 @@ pub fn projection(A: &Vector3, B: &Vector3) -> Vector3 {
 }
 
 /**
- * Returns the perpendicular part of B to A
+ * Returns the closest perpendicular part of B to A
  * A is normalized
  */
 pub fn rejection(A: &Vector3, B: &Vector3) -> Vector3 {

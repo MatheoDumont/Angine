@@ -170,8 +170,9 @@ fn compute_obb_plane(
         .expect("Tried to downcast to Plane");
 
     if super::obb_plane::obb_plane(o1, o2) {
-        println!("collsion obb plane");
-        Some(contact_algorithms::obb_plane(o1, o2))
+        let ci = contact_algorithms::obb_plane(o1, o2);
+
+        Some(ci)
     } else {
         None
     }
@@ -189,9 +190,8 @@ fn compute_plane_obb(
         .expect("Tried to downcast to OBB");
 
     if super::obb_plane::obb_plane(o2, o1) {
-        println!("collsion plane obb");
-
         let mut ci = contact_algorithms::obb_plane(o2, o1);
+
         swap_normal_orientation(&mut ci.normal_a_to_b);
         Some(ci)
     } else {
