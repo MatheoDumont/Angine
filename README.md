@@ -2,7 +2,7 @@
 Angine is an implementation of a Physics Engine in Rust with basic physics simulation and collision detection.
 It uses a discrete collision engine, solve collisions via impulsions and compute each step of the collision using the Semi-Implicit Euler method.
 
-It currently supported shapes are Sphere, Plane and OBB (Oriented Bounding Box) .
+It's currently supported shapes are Sphere, Plane and OBB (Oriented Bounding Box) .
 
 Intersection:
 |        | Sphere | Plane | OBB |
