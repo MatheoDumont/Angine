@@ -17,7 +17,7 @@ Collision Contact creation:
 |--------|--------|-------|-----|
 | Sphere |   x    |       |     |
 | Plane  |        |       |  x  |
-| OBB    |        |   x   |  x  |
+| OBB    |        |       |  x  |
 
 
 There is currently no broadphase, collision detection iterate over all the objects to detect a collision.
