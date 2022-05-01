@@ -15,7 +15,7 @@ Intersection:
 Collision Contact creation:
 |        | Sphere | Plane | OBB |
 |--------|--------|-------|-----|
-| Sphere |        |       |     |
+| Sphere |   x    |       |     |
 | Plane  |        |       |  x  |
 | OBB    |        |   x   |  x  |
 
