@@ -1,5 +1,30 @@
 # Angine
-Implementation of a Physics Engine in Rust with basic physics simulation and collision detection.
+Angine is an implementation of a Physics Engine in Rust with basic physics simulation and collision detection.
+It uses a discrete collision engine, solve collisions via impulsions and compute each step of the collision using the Semi-Implicit Euler method.
+
+It's currently supported shapes are Sphere, Plane and OBB (Oriented Bounding Box) .
+
+Intersection:
+|        | Sphere | Plane | OBB |
+|--------|--------|-------|-----|
+| Sphere |   x    |   x   |  x  |
+| Plane  |        |   x   |  x  |
+| OBB    |        |       |  x  |
+
+  
+Collision Contact creation:
+|        | Sphere | Plane | OBB |
+|--------|--------|-------|-----|
+| Sphere |   x    |       |     |
+| Plane  |        |       |  x  |
+| OBB    |        |       |  x  |
+
+
+There is currently no broadphase, collision detection iterate over all the objects to detect a collision.
+For each collision detected, a contact manifold is created. It contain the normal of the collision, the points on which the collision occur and pointers to the objects.
+
+Then, each collision is resolved by computing an impulsion used to push objects apart from each other.  
+Finally, we compute the new state of each object in the simulation by integrating the velocities then the position and orientation.
 
 ## Documentation 
 A good take of intersection and some math comes from [*The game physic cookbook*](https://gamephysicscookbook.com/), but i didn't exactly followed it.
@@ -7,7 +32,7 @@ A good take of intersection and some math comes from [*The game physic cookbook*
 - Row majored matrix
 - [Left-handed coordinate system](https://www.evl.uic.edu/ralph/508S98/coordinates.html)  
 ![left_hand_coord_system](https://user-images.githubusercontent.com/29271028/159712557-554fbb55-8b8e-41b9-852a-567de70e4713.png)  
-The rotation order is clockwise 
+The rotation order is clockwise (angle positive and looking down the negative axis around which we're rotating).
 ```
 rotation::z_axis(90 degrees) * vec::right = vec::up
 ```
