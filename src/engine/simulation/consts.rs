@@ -9,3 +9,5 @@ pub const GRAVITY_VECTOR: Vector3 = Vector3 {
     data: [0 as Real, -GRAVITY_ACCELERATION_CONST, 0 as Real],
 };
 pub const GRAVITY_INTEGRATED: Real = GRAVITY_ACCELERATION_CONST * DELTA_TIME;
+
+pub const ANGULAR_DAMPING: Real = 0.9;

@@ -204,7 +204,7 @@ pub fn sat_3D<T: PolyhedronTrait>(shape_A: &T, shape_B: &T) -> Option<SAT3DResul
             cross /= norm;
 
             // reoriente la normale pour partir de A
-            let r = &vertices_A[edge1.vi1] - &shape_A.transform_ref().position();
+            let r = &vertices_A[edge1.vi1] - &shape_A.transform_ref().translation;
             if dot(&cross, &r) < ZERO {
                 cross = -cross;
             }
@@ -327,7 +327,7 @@ mod test {
 
     impl Square {
         fn vertices(&self) -> Vec<P3> {
-            let position = self.transform.position();
+            let position = self.transform.translation;
             vec![
                 P3::new(
                     position[0] - self.halfsize.0,

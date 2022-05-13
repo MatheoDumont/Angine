@@ -1,7 +1,6 @@
 pub mod helper;
 pub mod matrix;
 pub mod quaternion;
-pub mod rotation_matrix;
 pub mod transform;
 pub mod vector;
 // pub mod static_square_matrix;
@@ -9,7 +8,6 @@ pub mod vector;
 pub use helper::*;
 pub use matrix::Mat3;
 pub use quaternion::Quaternion;
-pub use rotation_matrix::RotationMatrix;
 pub use transform::Rotation;
 pub use transform::Transform;
 pub use vector::Directions;

@@ -4,6 +4,7 @@ use crate::math::{math_essentials::*, Mat3};
 /**
  * Oriented Bounding Box
  */
+#[derive(Clone, Debug)]
 pub struct OBB {
     pub half_side: Vec3,
     pub transform: Transform,
@@ -20,7 +21,7 @@ impl Shape for OBB {
         let x_squared = self.half_side.x() * self.half_side.x() * 4.0;
         let y_squared = self.half_side.y() * self.half_side.y() * 4.0;
         let z_squared = self.half_side.z() * self.half_side.z() * 4.0;
-        let div = mass / 12.0;
+        let div = (mass) / 12.0;
 
         let diag = Vector3::new(
             div * (y_squared + z_squared),
@@ -250,10 +251,26 @@ impl OBB {
     /**
      * Return the distance from the center of OBB to the point on the contour in the direction of the normal 'n'.
      */
-    pub fn contour_distance(&self, n: &Vec3) -> Real {
+    pub fn distance_to_contour_in_direction(&self, n: &Vec3) -> Real {
         self.half_side[0] * dot(&n, &self.transform.rotation.row(0)).abs()
             + self.half_side[1] * dot(&n, &self.transform.rotation.row(1)).abs()
             + self.half_side[2] * dot(&n, &self.transform.rotation.row(2)).abs()
+    }
+
+    pub fn is_on_contour(&self, p: &P3) -> bool {
+        let mut n = p - &self.transform.translation;
+        let length = magnitude(&n);
+        n /= length;
+        println!(
+            "new length after normalization={:?}
+            distance = {:?}, length = {:?}",
+            magnitude(&n),
+            self.distance_to_contour_in_direction(&n),
+            length
+        );
+        // 2 a cause de la precision
+        helper::round_n_decimal(self.distance_to_contour_in_direction(&n), 2)
+            == helper::round_n_decimal(length, 2)
     }
 }
 
@@ -282,18 +299,17 @@ impl PolyhedronTrait for OBB {
         &self.faces
     }
 
-    // face_index is an index of the Vec<Faces> returned by faces()
     fn face_normal(&self, face: usize) -> Vec3 {
-        let modulo = face % 2;
-        let n = self.transform.rotation.row((face - modulo) / 2);
-        n - n * TWO * (modulo as Real) // if face is odd, then the normal is flipped, otherwise nothing
-
         // understandable version
         // if face % 2 == 0 {
         //     self.transform.rotation.row(face / 2)
         // } else {
         //     -self.transform.rotation.row((face - 1) / 2)
         // }
+
+        let modulo = face % 2;
+        let n = self.transform.rotation.row((face - modulo) / 2);
+        n - n * TWO * (modulo as Real) // if face is odd, then the normal is flipped, otherwise nothing
     }
     fn transform_ref(&self) -> &Transform {
         &self.transform
@@ -301,6 +317,7 @@ impl PolyhedronTrait for OBB {
     fn sat_separating_axis(&self) -> Vec<usize> {
         vec![0, 2, 4]
     }
+
     fn adjacent_faces(&self, face_index: usize) -> Vec<usize> {
         match face_index {
             0 => vec![3, 4, 2, 5],
@@ -317,8 +334,47 @@ impl PolyhedronTrait for OBB {
 #[cfg(test)]
 mod tests {
     use super::OBB;
+    use crate::engine::shapes::Shape;
     use crate::geometry::geometry_traits::PolyhedronTrait;
-    use crate::math::{math_essentials::*, Mat3};
+    use crate::math::{math_essentials::*, Mat3, Quaternion};
+
+    #[test]
+    fn test_distance_to_contour_in_direction() {
+        {
+            let obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+            let d = obb.distance_to_contour_in_direction(&Directions::right());
+            assert_eq!(d, ONE);
+        }
+
+        {
+            let mut obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb.set_position(P3::new(-1.0, -1.0, 0.0));
+            let d = obb.distance_to_contour_in_direction(&normalized(Vec3::new(ONE, ONE, ZERO)));
+            assert_eq!(d, 2.0_f32.sqrt());
+        }
+
+        {
+            let mut obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb.set_transform(Transform::rotation(Rotation::Z(helper::angle_2_rad(45.0))));
+            let d = obb.distance_to_contour_in_direction(&Directions::right());
+
+            assert_eq!(d, 2.0_f32.sqrt());
+        }
+    }
+    #[test]
+    fn test_is_on_contour() {
+        {
+            let obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+            assert_eq!(obb.is_on_contour(&P3::new(ONE, ZERO, ZERO)), true);
+        }
+
+        {
+            let mut obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+            obb.set_transform(Transform::rotation(Rotation::Z(helper::angle_2_rad(45.0))));
+
+            assert_eq!(obb.is_on_contour(&P3::new(2_f32.sqrt(), ZERO, -ONE)), true);
+        }
+    }
     #[test]
     fn OBB_is_inside() {
         // not rotated
@@ -466,10 +522,18 @@ mod tests {
             }
         }
     }
+    #[test]
+    pub fn test_computed_normal_inverse_to_normal_from_rotation() {
+        let mut obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+        obb.set_orientation(Rotation::X(helper::angle_2_rad(90.0)));
+
+        println!("{:?} {:?}", obb.face_normal(5), obb.computed_face_normal(5));
+    }
 
     #[test]
     fn normal_face_test() {
         let mut obb = OBB::new(Vec3::new(ONE, ONE, ONE));
+
         obb.transform = Transform::new(
             Vec3::ones(),
             Rotation::composed(

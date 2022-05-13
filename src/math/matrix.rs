@@ -1,6 +1,6 @@
 use super::{vector::*, Real, Vec3, Vector3, ONE, P3, ZERO};
+use nalgebra::Matrix3;
 use std::ops::{Index, IndexMut, Mul};
-
 /**
  * Implémentation unique de Matrice carré 3x3.
  *
@@ -15,7 +15,7 @@ use std::ops::{Index, IndexMut, Mul};
  */
 #[derive(Copy, Clone, Debug)]
 pub struct Mat3 {
-    data: [[Real; 3]; 3],
+    pub data: [[Real; 3]; 3],
 }
 
 impl Mat3 {
@@ -182,12 +182,30 @@ impl Mat3 {
 
     pub fn inverse(&self) -> Mat3 {
         let det = self.determinant();
-        assert!(det != (ZERO), "Matrice non-inversible, det(mat) = 0");
-
+        debug_assert!(det != (ZERO), "Matrice non-inversible, det(mat) = 0");
+        
         let minors = self.minors();
         let cofactors = Mat3::cofactor_from(&minors);
         let adj = Mat3::adjugate_from(&cofactors);
         &adj * (ONE / det)
+        // let m = Matrix3::new(
+        //     self.data[0][0],
+        //     self.data[0][1],
+        //     self.data[0][2],
+        //     self.data[1][0],
+        //     self.data[1][1],
+        //     self.data[1][2],
+        //     self.data[2][0],
+        //     self.data[2][1],
+        //     self.data[2][2],
+        // );
+        // let inv = m.try_inverse().unwrap();
+
+        // Mat3::from_array([
+        //     [inv[(0, 0)], inv[(0, 1)], inv[(0, 2)]],
+        //     [inv[(1, 0)], inv[(1, 1)], inv[(1, 2)]],
+        //     [inv[(2, 0)], inv[(2, 1)], inv[(2, 2)]],
+        // ])
     }
 }
 

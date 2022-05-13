@@ -49,7 +49,8 @@ impl SimulationWorld {
     }
 
     pub fn solve_contact_manifolds(&mut self) {
-        // comme si les deux objets etait mobiles
+        println!("============================ solve_contact_manifolds =================================");
+
         println!(
             "solve_contact_manifolds {:?}",
             self.collision_world.contact_manifolds.len()
@@ -68,95 +69,59 @@ impl SimulationWorld {
                 .id_rigid_body
                 .unwrap();
 
-            let normal = cm.contact_infos.normal_a_to_b;
+            println!(
+                "Points de collisions ({:?}) : ",
+                cm.contact_infos.points.len(),
+            );
+            for p in &cm.contact_infos.points {
+                println!("       {:?}", p);
+            }
+
             match (self.bodies[rb1_id].is_static, self.bodies[rb2_id].is_static) {
                 (false, false) => {
-                    // println!("both mving");
+                    println!("both mving");
 
                     for p in &cm.contact_infos.points {
-                        let r1 = p - self.bodies[rb1_id].center_of_mass();
-                        let r2 = p - self.bodies[rb2_id].center_of_mass();
-                        let (j1, j2) = collision_solver::compute_amps_moving_objects(
-                            &self.bodies[rb1_id],
-                            &self.bodies[rb2_id],
-                            &r1,
-                            &r2,
-                            &normal,
+                        collision_solver::resolve_collision(
+                            &mut self.bodies,
+                            rb1_id,
+                            rb2_id,
+                            &p,
+                            &cm.contact_infos,
                         );
-                        self.bodies[rb1_id].apply_linear_impulse(normal * j1);
-                        self.bodies[rb2_id].apply_linear_impulse(-normal * j2);
-                        self.bodies[rb1_id].apply_angular_impulse(cross(&r1, &(normal * j1)));
-                        self.bodies[rb2_id].apply_angular_impulse(cross(&r2, &(-normal * j2)));
                     }
                 }
                 (false, true) => {
                     println!("First mving");
                     println!(
-                        "normal={:?}  penetration={:?} , static={:?} moving={:?}",
-                        normal,
-                        cm.contact_infos.penetration_distance,
-                        self.bodies[rb2_id].transform.position(),
-                        self.bodies[rb1_id].transform.position(),
+                        "static={:?} moving={:?}",
+                        self.bodies[rb2_id].transform.translation,
+                        self.bodies[rb1_id].transform.translation,
                     );
 
                     for p in &cm.contact_infos.points {
-                        println!("{:?}", p);
-
-                        let r1 = p - self.bodies[rb1_id].center_of_mass();
-
-                        let j = collision_solver::compute_amps_one_moving_object(
-                            &self.bodies[rb1_id],
-                            &r1,
-                            &normal,
-                        ) + collision_solver::compensate_no_speed_one_moving(
+                        collision_solver::resolve_collision_point_one_moving(
                             &mut self.bodies[rb1_id],
-                            &r1,
-                            &normal,
+                            &p,
+                            cm.contact_infos.normal_a_to_b,
                             cm.contact_infos.penetration_distance,
                         );
-                        // self.bodies[rb2_id]
-                        //     .apply_displacement(-normal * cm.contact_infos.penetration_distance);
-
-                        println!(" amp={:?} ", j);
-
-                        self.bodies[rb1_id].apply_linear_impulse(-normal * j);
-                        // self.bodies[rb2_id].apply_linear_impulse(normal * j2);
-                        self.bodies[rb1_id].apply_angular_impulse(cross(&r1, &(-normal * j)));
-                        // self.bodies[rb2_id].apply_angular_impulse(cross(&r2, &(normal * j2)));
                     }
                 }
                 (true, false) => {
                     println!("second mving");
                     println!(
-                        "normal={:?}  penetration={:?} , static={:?} moving={:?}",
-                        normal,
-                        cm.contact_infos.penetration_distance,
-                        self.bodies[rb2_id].transform.position(),
-                        self.bodies[rb1_id].transform.position(),
+                        "static={:?} moving={:?}",
+                        self.bodies[rb2_id].transform.translation,
+                        self.bodies[rb1_id].transform.translation,
                     );
                     for p in &cm.contact_infos.points {
-                        println!("{:?}", p);
-                        let r2 = p - self.bodies[rb2_id].center_of_mass();
-
-                        let j = collision_solver::compute_amps_one_moving_object(
-                            &self.bodies[rb2_id],
-                            &r2,
-                            &normal,
-                        ) + collision_solver::compensate_no_speed_one_moving(
+                        collision_solver::resolve_collision_point_one_moving(
                             &mut self.bodies[rb2_id],
-                            &r2,
-                            &normal,
+                            &p,
+                            -cm.contact_infos.normal_a_to_b,
                             cm.contact_infos.penetration_distance,
                         );
-
-                        // self.bodies[rb2_id]
-                        //     .apply_displacement(normal * cm.contact_infos.penetration_distance);
-                        println!(" amp={:?} ", j);
-
-                        // self.bodies[rb1_id].apply_linear_impulse(normal * j1);
-                        self.bodies[rb2_id].apply_linear_impulse(normal * j);
-                        // self.bodies[rb1_id].apply_angular_impulse(cross(&r1, &(normal * j1)));
-                        self.bodies[rb2_id].apply_angular_impulse(cross(&r2, &(normal * j)));
                     }
                 }
                 (true, true) => {
@@ -171,8 +136,10 @@ impl SimulationWorld {
         self.collision_world.step();
 
         // 2. On calcul et on applique les impulsions
-        self.solve_contact_manifolds();
-
+        let n_ite = 1;
+        for _ in 0..n_ite {
+            self.solve_contact_manifolds();
+        }
         self.collision_world.clear_manifold();
 
         // 3. integre les nouveaux états( vitesses lin ang, position, orientation) et update inertia tensor on rigidbodies
@@ -191,6 +158,13 @@ impl SimulationWorld {
             // 4. Mettre à jour la position pour les shapes des collisions object associés aux rigid bodies
             self.collision_world
                 .update_transform_collision_object(rb.collision_object_id(), rb.transform.clone());
+
+            println!(
+                "  [{:?}]  {:?} mass={:?}",
+                rb.id,
+                rb.linear_velocity,
+                rb.mass()
+            );
         }
     }
 }

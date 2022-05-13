@@ -30,7 +30,7 @@ mod tests {
 
         {
             let pl1 = Plane::new(Directions::up());
-            let mut pl2 = Plane::new(normalized(&Vec3::new(ONE, ONE, ZERO)));
+            let mut pl2 = Plane::new(normalized(Vec3::new(ONE, ONE, ZERO)));
             pl2.set_position(P3::new(ZERO, ONE, ZERO));
 
             assert_eq!(plane_plane(&pl1, &pl2), true);

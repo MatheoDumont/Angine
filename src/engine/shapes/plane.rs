@@ -51,7 +51,7 @@ impl Plane {
      * 0 if on
      */
     pub fn signed_distance(&self, p: &P3) -> Real {
-        let ap = p - &self.transform.position();
+        let ap = p - &self.transform.translation;
         dot(&self.normal, &ap)
     }
 
@@ -60,7 +60,9 @@ impl Plane {
      */
     pub fn reject_point_on_plane(&self, p: &P3) -> Vec3 {
         // rejection en prennant en compte la distance au plan
-        rejection(&self.normal, &p) + projection(&self.normal, self.get_position())
+        // rejection(&self.normal, &p) + projection(&self.normal, self.get_position())
+        // equivalent mais plus simple à comprendre
+        p - &(self.normal * self.signed_distance(&p))
     }
 
     fn compute_distance_from_origin(&mut self) {

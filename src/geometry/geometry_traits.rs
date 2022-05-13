@@ -1,11 +1,12 @@
+use super::helper as geometry_helper;
 use crate::math::{math_essentials::*, Mat3};
-
+#[derive(Copy, Clone, Debug)]
 pub struct EdgeIndex {
     // vertex index
     pub vi1: usize,
     pub vi2: usize,
 }
-
+#[derive(Clone, Debug)]
 pub struct FaceIndex {
     // vertices indices
     pub v_i: Vec<usize>,
@@ -56,7 +57,6 @@ pub trait PolyhedronTrait {
     fn face_normal(&self, face_index: usize) -> Vec3;
     fn computed_face_normal(&self, face_index: usize) -> Vec3 {
         let face_indices = &self.faces_ref()[face_index];
-        let rotation = self.transform_ref().rotation;
 
         let p0 = self
             .transform_ref()
@@ -67,17 +67,10 @@ pub trait PolyhedronTrait {
         let p2 = self
             .transform_ref()
             .transform_vec(self.local_vertex_ref(face_indices.v_i[2]));
-        let d1 = p2 - p1;
-        let d2 = p0 - p1;
-        let mut normal = cross(&d1, &d2);
-        normalize(&mut normal);
 
-        // reoriente la normale pour partir de A
-        if dot(&normal, &p0) < 0.0 {
-            normal = -normal;
-        }
-        normal
+        geometry_helper::face_normal(&p0, &p1, &p2)
     }
+
     fn transform_ref(&self) -> &Transform;
 
     fn edge_direction(&self, edge_idx: usize) -> Vec3 {

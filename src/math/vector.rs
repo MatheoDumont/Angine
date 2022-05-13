@@ -59,8 +59,8 @@ pub fn normalize(v: &mut Vector3) {
     *v /= magnitude(v);
 }
 
-pub fn normalized(v: &Vector3) -> Vector3 {
-    let l = magnitude(v);
+pub fn normalized(v: Vector3) -> Vector3 {
+    let l = magnitude(&v);
     Vector3::from_array([v[0] / l, v[1] / l, v[2] / l])
 }
 
@@ -334,7 +334,7 @@ mod tests {
     fn vector_normalized() {
         let r = 56f32.sqrt();
         let v = Vector3::new(2f32, 4f32, 6f32);
-        let vv = normalized(&v);
+        let vv = normalized(v);
 
         assert_eq!(vv.x(), 2f32 / r);
         assert_eq!(vv.y(), 4f32 / r);

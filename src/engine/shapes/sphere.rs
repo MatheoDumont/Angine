@@ -24,7 +24,11 @@ impl Sphere {
 impl Shape for Sphere {
     fn compute_inertia_matrix(&self, mass: Real) -> Mat3 {
         // pour l'instant
-        panic!("inertia matrix for Sphere not implemented");
+        // panic!("inertia matrix for Sphere not implemented");
+
+        
+
+        Mat3::diag(Vec3::value(0.4 * mass * self.radius.powi(2)))
     }
 
     fn shape_type(&self) -> ShapeType {

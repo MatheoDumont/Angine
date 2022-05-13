@@ -1,7 +1,7 @@
 use super::ContactInformation;
 
-use crate::engine::shapes::{Line, OBB};
-use crate::geometry::{geometry_traits::*, sat, sat::EdgeResult, sat::FaceResult};
+use crate::engine::shapes::{Segment, OBB};
+use crate::geometry::{self, geometry_traits::*, sat, sat::EdgeResult, sat::FaceResult};
 use crate::math::math_essentials::*;
 
 pub fn obb_obb(obb1: &OBB, obb2: &OBB) -> ContactInformation {
@@ -74,11 +74,11 @@ pub fn face_contact(obb1: &OBB, obb2: &OBB, reference_face: &FaceResult) -> Vec<
         }
 
         // on clip
-        clip(&mut vertices_to_clip, side_normal, &v1);
+        geometry::helper::clip(&mut vertices_to_clip, side_normal, &v1);
     }
 
     // maintenant on clip avec la normal de la face de référence pour relever tous les points en dessous sur la face, on laisse ceux au dessus
-    clip(
+    geometry::helper::clip(
         &mut vertices_to_clip,
         -reference_face_normal,
         &obb1_vertices[obb1.faces_ref()[reference_face.face_index].v_i[0]],
@@ -90,11 +90,11 @@ pub fn face_contact(obb1: &OBB, obb2: &OBB, reference_face: &FaceResult) -> Vec<
 pub fn edge_contact(obb1: &OBB, obb2: &OBB, edge: &EdgeResult) -> Vec<P3> {
     let e1 = &obb1.edges_ref()[edge.edge_a_index];
     let e2 = &obb2.edges_ref()[edge.edge_b_index];
-    let l1 = Line::new(
+    let l1 = Segment::new(
         obb1.transformed_vertex(e1.vi1),
         obb1.transformed_vertex(e1.vi2),
     );
-    let l2 = Line::new(
+    let l2 = Segment::new(
         obb1.transformed_vertex(e2.vi1),
         obb1.transformed_vertex(e2.vi2),
     );
@@ -107,86 +107,5 @@ pub fn edge_contact(obb1: &OBB, obb2: &OBB, edge: &EdgeResult) -> Vec<P3> {
         vec![points[0]]
     } else {
         vec![(points[0] + points[1]) / TWO]
-    }
-}
-
-/**
- * pour tous les points de adjacent_face_index ou dot(&p, side_normal) > 0, ramener pour dot(&p, side_normal) == 0
- * ou p est un des points composant la face adjacent_face_index
- */
-fn clip(vertices_to_clip: &mut Vec<P3>, clipping_normal: Vec3, vertex_on_face: &Vec3) {
-    for v in vertices_to_clip.iter_mut() {
-        let face2vertex = *v - *vertex_on_face;
-
-        if dot(&clipping_normal, &v) > ZERO {
-            *v -= projection(&clipping_normal, &face2vertex);
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use assert_approx_eq::assert_approx_eq;
-    #[test]
-    fn test_clip() {
-        {
-            let mut v = vec![
-                P3::new(1.0, 2.0, 3.0),
-                P3::new(-1.0, -2.0, -3.0),
-                P3::new(1.0, 0.0, 3.0),
-            ];
-            clip(&mut v, Directions::up(), &P3::origin());
-
-            assert_eq!(v[0].x(), ONE);
-            assert_eq!(v[0].y(), ZERO);
-            assert_eq!(v[0].z(), 3.0);
-
-            assert_eq!(v[1].x(), -ONE);
-            assert_eq!(v[1].y(), -2.0);
-            assert_eq!(v[1].z(), -3.0);
-
-            assert_eq!(v[2].x(), ONE);
-            assert_eq!(v[2].y(), ZERO);
-            assert_eq!(v[2].z(), 3.0);
-        }
-
-        {
-            let mut v = vec![
-                P3::new(1.0, 2.0, 3.0),
-                P3::new(-1.0, -2.0, -3.0),
-                P3::new(1.0, 0.0, 3.0),
-            ];
-            clip(&mut v, Directions::right(), &P3::origin());
-
-            assert_eq!(v[0].x(), ZERO);
-            assert_eq!(v[0].y(), 2.0);
-            assert_eq!(v[0].z(), 3.0);
-
-            assert_eq!(v[1].x(), -ONE);
-            assert_eq!(v[1].y(), -2.0);
-            assert_eq!(v[1].z(), -3.0);
-
-            assert_eq!(v[2].x(), ZERO);
-            assert_eq!(v[2].y(), ZERO);
-            assert_eq!(v[2].z(), 3.0);
-        }
-
-        {
-            let mut v = vec![
-                P3::new(1.0, 2.0, 3.0),
-                P3::new(-1.0, -2.0, -3.0),
-                P3::new(1.0, 0.0, 3.0),
-            ];
-            let normal = Rotation::Z(helper::angle_2_rad(45.0)) * Directions::right();
-
-            clip(&mut v, normal, &P3::origin());
-
-            assert_approx_eq!(dot(&v[0], &normal), ZERO);
-            assert_approx_eq!(v[1].x(), -ONE);
-            assert_approx_eq!(v[1].y(), -2.0);
-            assert_approx_eq!(v[1].z(), -3.0);
-            assert_approx_eq!(dot(&v[2], &normal), ZERO);
-        }
     }
 }

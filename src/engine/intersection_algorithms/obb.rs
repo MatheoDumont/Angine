@@ -6,7 +6,7 @@ pub fn obb_obb(obb1: &OBB, obb2: &OBB) -> bool {
     // let p = obb1.closest_point(&P3::from(obb2.transform.translation));
     // obb2.is_inside(&p)
     // obb1 to obb2
-    let d = obb1.transform.position() - obb2.transform.position();
+    let d = &obb1.transform.translation - &obb2.transform.translation;
     let l = magnitude(&d);
     let n = d / l;
 

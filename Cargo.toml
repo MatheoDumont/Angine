@@ -9,4 +9,5 @@ edition = "2021"
 downcast-rs = "1.2.0"
 assert_approx_eq = "1.1.0"
 kiss3d = "0.32"
+nalgebra = "0.31"
 

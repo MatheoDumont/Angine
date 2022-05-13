@@ -24,7 +24,7 @@ fn init() {
         .collision_world
         .collision_object_ref(obb_rb.collision_object_id());
     assert!(r.is_ok());
-    assert_eq!(obb_rb.center_of_mass(), &obb_rb.transform.position());
+    assert_eq!(obb_rb.center_of_mass(), &obb_rb.transform.translation);
     let obb_co = r.unwrap();
     assert_eq!(obb_co.id, 0);
     assert_eq!(obb_co.id_rigid_body, Some(0));
@@ -176,7 +176,6 @@ fn assert_on_collision() {
     assert!(dot(&ab, &cm.contact_infos.normal_a_to_b) > 0.0);
 }
 
-
 fn impulsion_and_normal() {
     // detection (obb, plane)
     {
@@ -243,7 +242,7 @@ fn impulsion_and_normal() {
         );
 
         assert!(magnitude(&plane2obb_ttwo) > magnitude(&plane2obb_tone));
-        assert!(dot(&normalized(&plane2obb_ttwo), &plane2obb_tone) > 0.0);
+        assert!(dot(&normalized(plane2obb_ttwo), &plane2obb_tone) > 0.0);
     }
 
     // la seule chose qui change est l'ordre de la detection de collision = (plane, obb)
@@ -311,6 +310,6 @@ fn impulsion_and_normal() {
         );
 
         assert!(magnitude(&plane2obb_ttwo) > magnitude(&plane2obb_tone));
-        assert!(dot(&normalized(&plane2obb_ttwo), &plane2obb_tone) > 0.0);
+        assert!(dot(&normalized(plane2obb_ttwo), &plane2obb_tone) > 0.0);
     }
 }

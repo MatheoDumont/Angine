@@ -93,7 +93,7 @@ impl CollisionWorld {
                 continue;
             }
 
-            for el2 in self.collision_objects.iter().nth(i1 + 1) {
+            for el2 in self.collision_objects.iter().skip(i1 + 1) {
                 let obj_j = el2.1;
                 if !obj_j.enabled || (obj_i.is_static && obj_j.is_static) {
                     continue;

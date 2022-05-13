@@ -47,7 +47,7 @@ impl RigidBody {
             inv_mass: ONE / mass,
             transform,
             id: 0,
-            restitution_coef: 0.5,
+            restitution_coef: 0.98,
             is_static,
             center_of_mass: transform.translation,
             local_center_of_mass: P3::origin(),
@@ -109,7 +109,6 @@ impl RigidBody {
     pub fn integrate_velocities(&mut self, dt: Real) {
         self.linear_velocity += self.total_force * self.inv_mass * dt;
         self.angular_velocity += self.inv_inertia_tensor * self.total_torque * dt;
-
         self.total_force = Vec3::zeros();
         self.total_torque = Vec3::zeros();
     }

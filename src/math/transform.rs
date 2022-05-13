@@ -87,10 +87,6 @@ impl Transform {
     pub fn transform_vec(&self, vec: &Vec3) -> Vec3 {
         &self.rotation * vec
     }
-
-    pub fn position(&self) -> P3 {
-        P3::from(self.translation)
-    }
 }
 
 impl Mul for Transform {
@@ -112,5 +108,80 @@ impl Mul for &Transform {
             rotation: &self.rotation * &o.rotation,
             translation: &self.translation + &o.translation,
         }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::math::math_essentials::*;
+
+    pub fn testx(pitch: Real) -> Mat3 {
+        let c = pitch.cos();
+        let s = pitch.sin();
+        Mat3::from_array([[ONE, ZERO, ZERO], [ZERO, c, s], [ZERO, -s, c]])
+    }
+    pub fn testy(yaw: Real) -> Mat3 {
+        let c = yaw.cos();
+        let s = yaw.sin();
+        Mat3::from_array([[c, ZERO, -s], [ZERO, ONE, ZERO], [s, ZERO, c]])
+    }
+    pub fn testz(roll: Real) -> Mat3 {
+        let c = roll.cos();
+        let s = roll.sin();
+        Mat3::from_array([[c, s, ZERO], [-s, c, ZERO], [ZERO, ZERO, ONE]])
+    }
+
+    #[test]
+    fn testtesttest() {
+        let x = testx(helper::angle_2_rad(90.0));
+        let v = Directions::up();
+        // assert_eq!(
+        //     helper::round_n_decimal_vector(&(x * v), 6),
+        //     helper::round_n_decimal_vector(&Directions::forward(), 6)
+        // );
+        println!("{:?} {:?}", v, x * v);
+        println!("{:?} ", x);
+
+        let x = testy(helper::angle_2_rad(90.0));
+        let v = Directions::forward();
+        // assert_eq!(
+        //     helper::round_n_decimal_vector(&(x * v), 6),
+        //     helper::round_n_decimal_vector(&Directions::right(), 6)
+        // );
+        println!("{:?} {:?}", v, x * v);
+        println!("{:?} ", x);
+
+        let x = testz(helper::angle_2_rad(90.0));
+        let v = Directions::right();
+        // assert_eq!(
+        //     helper::round_n_decimal_vector(&(x * v), 6),
+        //     helper::round_n_decimal_vector(&Directions::up(), 6)
+        // );
+        println!("{:?} {:?}", v, x * v);
+        println!("{:?} ", x);
+    }
+    // assert qu'une rotation sur chaque axe est bien clockwise en regardant vers le negatif de l'axe ie vers le moins de l'axe
+    #[test]
+    fn rotation_are_clockwise() {
+        let x = Rotation::X(helper::angle_2_rad(90.0));
+        let v = Directions::up();
+        assert_eq!(
+            helper::round_n_decimal_vector(&(x * v), 6),
+            helper::round_n_decimal_vector(&Directions::forward(), 6)
+        );
+
+        let x = Rotation::Y(helper::angle_2_rad(90.0));
+        let v = Directions::forward();
+        assert_eq!(
+            helper::round_n_decimal_vector(&(x * v), 6),
+            helper::round_n_decimal_vector(&Directions::right(), 6)
+        );
+
+        let x = Rotation::Z(helper::angle_2_rad(90.0));
+        let v = Directions::right();
+        assert_eq!(
+            helper::round_n_decimal_vector(&(x * v), 6),
+            helper::round_n_decimal_vector(&Directions::up(), 6)
+        );
     }
 }

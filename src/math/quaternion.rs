@@ -136,23 +136,22 @@ impl Quaternion {
         let x = helper::max(ZERO, ONE + m[0][0] - m[1][1] - m[2][2]).sqrt() / TWO;
         let y = helper::max(ZERO, ONE - m[0][0] + m[1][1] - m[2][2]).sqrt() / TWO;
         let z = helper::max(ZERO, ONE - m[0][0] - m[1][1] + m[2][2]).sqrt() / TWO;
-        // Q.x = _copysign( Q.x, m21 - m12 )
-        // Q.y = _copysign( Q.y, m02 - m20 )
-        // Q.z = _copysign( Q.z, m10 - m01 )
-        let copysign = |a: Real, b: Real| {
-            if b > ZERO {
-                a.abs()
-            } else if b < ZERO {
-                -a.abs()
-            } else {
-                ZERO
-            }
-        };
+
+        // let copysign = |a: Real, b: Real| {
+        //     if b > ZERO {
+        //         a.abs()
+        //     } else if b < ZERO {
+        //         -a.abs()
+        //     } else {
+        //         ZERO
+        //     }
+        // };
+
         Quaternion {
             w,
-            x: copysign(x, m[2][1] - m[1][2]),
-            y: copysign(y, m[0][2] - m[2][0]),
-            z: copysign(z, m[1][0] - m[0][1]),
+            x: x.copysign(m[2][1] - m[1][2]),
+            y: y.copysign(m[0][2] - m[2][0]),
+            z: z.copysign(m[1][0] - m[0][1]),
         }
     }
 
@@ -258,6 +257,67 @@ mod tests {
     use assert_approx_eq::assert_approx_eq;
 
     #[test]
+    fn test_axis_vs_angle() {
+        let v = Directions::up();
+        let q = Quaternion::from_euler_rads(
+            helper::angle_2_rad(90.0),
+            helper::angle_2_rad(ZERO),
+            helper::angle_2_rad(ZERO),
+        );
+        let qq = Quaternion::from_rad_axis(helper::angle_2_rad(90.0), Directions::right());
+
+        let vv = q.rotate(&v);
+        let vvv = qq.rotate(&v);
+        assert_eq!(
+            helper::round_n_decimal_vector(&vv, 6),
+            helper::round_n_decimal_vector(&vvv, 6)
+        );
+
+        println!(
+            "{:?}",
+            Quaternion::from_euler_rads(
+                helper::angle_2_rad(90.0),
+                helper::angle_2_rad(ZERO),
+                helper::angle_2_rad(ZERO),
+            )
+            .to_mat3(),
+        );
+    }
+
+    #[test]
+    fn test_to_mat() {
+        let q = Quaternion::from_euler_rads(
+            helper::angle_2_rad(90.0),
+            helper::angle_2_rad(ZERO),
+            helper::angle_2_rad(ZERO),
+        );
+        let v = Directions::up();
+        let vv = q.rotate(&v);
+        let m = q.to_mat3();
+        let vvv = m * v;
+
+        assert_eq!(
+            helper::round_n_decimal_vector(&vv, 6),
+            helper::round_n_decimal_vector(&vvv, 6)
+        );
+
+        let x_angle = -30.0;
+        let y_angle = 35.0;
+        let z_angle = 45.0;
+        let v = Vector3::new(0.5, 0.6, 0.7);
+
+        // z then y
+        let q = Quaternion::from_euler_angles(x_angle, y_angle, z_angle);
+        let m = q.to_mat3();
+        let vv = q.rotate(&v);
+        let vvv = m * v;
+
+        assert_eq!(
+            helper::round_n_decimal_vector(&vv, 6),
+            helper::round_n_decimal_vector(&vvv, 6)
+        );
+    }
+    #[test]
     fn quaternion_rotation() {
         // rot around Z
         {
@@ -328,22 +388,6 @@ mod tests {
         //     println!("{:?}", q.to_mat3() * Vec3::new(ONE, ONE, -ONE));
 
         // }
-    }
-
-    #[test]
-    fn quat_to_matrices() {
-        let x_angle = -30.0;
-        let y_angle = 35.0;
-        let z_angle = 45.0;
-        let v = Vector3::new(0.5, 0.6, 0.7);
-
-        // z then y
-        let q = Quaternion::from_euler_angles(x_angle, y_angle, z_angle);
-        let m = q.to_mat3();
-
-        assert_approx_eq!(q.rotate(&v)[0], (m * v)[0]);
-        assert_approx_eq!(q.rotate(&v)[1], (m * v)[1]);
-        assert_approx_eq!(q.rotate(&v)[2], (m * v)[2]);
     }
 
     #[test]

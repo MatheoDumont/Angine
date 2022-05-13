@@ -1,17 +1,19 @@
+use super::{Plane, Shape};
 use crate::math::math_essentials::*;
 
-pub struct Line {
+pub struct Segment {
     pub a: P3,
     pub b: P3,
 }
 
-impl Line {
-    pub fn new(a: P3, b: P3) -> Line {
-        Line { a, b }
+impl Segment {
+    pub fn new(a: P3, b: P3) -> Segment {
+        Segment { a, b }
     }
-    pub fn point_on_line(&self, p: P3) -> bool {
-        let ap = normalized(&(p - self.a));
-        let ab = normalized(&(self.b - self.a));
+
+    pub fn is_point_on_line(&self, p: P3) -> bool {
+        let ap = normalized(p - self.a);
+        let ab = normalized(self.b - self.a);
         let d_rounded = helper::round_n_decimal(dot(&ap, &ab), 6);
         d_rounded.abs() == ONE
     }
@@ -19,7 +21,7 @@ impl Line {
     /**
      * Retourne le point sur chaque droite le plus proche de l'autre, donc 2 points en tout.
      * Si les 2 points sont les mêmes, alors les 2 droites s'intersectent.
-     * C'est ce que fait la fonction intersect().
+     * C'est ce que fait la fonction intersect_line().
      *
      * source: https://math.stackexchange.com/questions/846054/closest-points-on-two-line-segments/883210#883210
      *
@@ -61,7 +63,7 @@ impl Line {
      * Puis on choisit pour chaque droite L1 et L2 le point résultant de s ou t minimisant
      * la distance au point de l'extrémité de l'autre droite.
      */
-    pub fn closest_point_each_other(&self, line: &Line) -> [P3; 2] {
+    pub fn closest_point_each_other(&self, line: &Segment) -> [P3; 2] {
         let p1 = self.a;
         let p2 = self.b;
         let p3 = line.a;
@@ -122,7 +124,7 @@ impl Line {
             [p_on_self, p_on_line]
         }
     }
-    pub fn intersect(&self, line: &Line) -> Option<P3> {
+    pub fn intersect_line(&self, line: &Segment) -> Option<P3> {
         let pts = self.closest_point_each_other(line);
 
         if helper::round_n_decimal_vector(&pts[0], 6) == helper::round_n_decimal_vector(&pts[1], 6)
@@ -132,32 +134,144 @@ impl Line {
             None
         }
     }
+
+    /**
+     * Equation is :
+     * [ (1-t)a + tb - p ] . n = 0
+     * with the line (a, b) and the plane centered at p with normal n, and where '.' is the dot product.
+     *```text
+     *        n . (a - p)
+     * t = - -------------
+     *        n . (b - a)
+     *```
+     * return some(p) if t is between 0 and 1, None otherwise.
+     *
+     * Don't deal with coplanar line and plane
+     */
+    pub fn intersect_plane(&self, plane: &Plane) -> Option<P3> {
+        // println!("dir={:?} normal={:?}", self.b - self.a, plane.normal);
+        let t = -dot(&plane.normal, &(&self.a - plane.get_position()))
+            / dot(&plane.normal, &(self.b - self.a));
+
+        // println!("t={:?} = {:?}", t, self.a * (ONE - t) + self.b * t);
+
+        if t < ZERO || t > ONE {
+            None
+        } else {
+            Some(self.a * (ONE - t) + self.b * t)
+        }
+    }
+
+    /**
+     * Test if vector ab is coplanar to the plane, ie ab . n = 0
+     */
+    pub fn is_coplanar(&self, plane: &Plane) -> bool {
+        dot(&plane.normal, &(self.b - self.a)) == ZERO
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use assert_approx_eq::assert_approx_eq;
+
+    #[test]
+    fn test_intersect_plane() {
+        {
+            let line = Segment {
+                a: P3::new(ZERO, ZERO, ZERO),
+                b: P3::new(2.0, 2.0, ZERO),
+            };
+
+            let mut plane = Plane::new(Directions::up());
+            plane.set_position(P3::new(ZERO, 1.0, ZERO));
+
+            let r = line.intersect_plane(&plane);
+            assert!(r.is_some());
+
+            let p = r.unwrap();
+
+            assert_eq!(p.x(), 1.0);
+            assert_eq!(p.y(), 1.0);
+            assert_eq!(p.z(), 0.0);
+        }
+
+        {
+            let line = Segment {
+                a: P3::new(ZERO, ZERO, ZERO),
+                b: P3::new(1.0, ZERO, ZERO),
+            };
+
+            let mut plane = Plane::new(Directions::right());
+            plane.set_position(P3::new(1.0, ZERO, ZERO));
+
+            let r = line.intersect_plane(&plane);
+            assert!(r.is_some());
+
+            let p = r.unwrap();
+
+            assert_eq!(p.x(), 1.0);
+            assert_eq!(p.y(), 0.0);
+            assert_eq!(p.z(), 0.0);
+        }
+
+        {
+            let line = Segment {
+                a: P3::new(ZERO, ZERO, ZERO),
+                b: P3::new(1.0, ZERO, ZERO),
+            };
+
+            let mut plane = Plane::new(Directions::up());
+            plane.set_position(P3::new(1.0, ZERO, ZERO));
+
+            let r = line.intersect_plane(&plane);
+            assert!(r.is_some());
+            assert!(line.is_coplanar(&plane));
+
+            let p = r.unwrap();
+
+            assert!(p.x().is_infinite() || p.x().is_nan());
+            assert!(p.y().is_infinite() || p.y().is_nan());
+            assert!(p.z().is_infinite() || p.z().is_nan());
+        }
+        {
+            // from real case
+            let a = Vector3 {
+                data: [-1.0003452, -8.050068, 1.0],
+            };
+            let b = Vector3 {
+                data: [0.99965465, -8.049377, 1.0],
+            };
+            let mut plane = Plane::new(Vector3 {
+                data: [0.0, 1.0, 0.0],
+            });
+            plane.set_position(Vec3::new(0.0, -10.0, 0.0));
+            let seg = Segment::new(a, b);
+            let r = seg.intersect_plane(&plane);
+            assert!(r.is_none());
+            // car le plan et le segment ne s'intersectent pas dans l'intervale 0 1 du segment
+        }
+    }
     #[test]
     fn test_closest_point_on_lines() {
         // perpendicular to X axis
         {
-            let l1 = Line {
+            let l1 = Segment {
                 a: P3::new(3.0, 0.0, 0.0),
                 b: P3::new(3.0, 1.0, 1.0),
             };
-            let l2 = Line {
+            let l2 = Segment {
                 a: P3::new(3.0, 3.0, 0.0),
                 b: P3::new(3.0, 0.0, 1.5),
             };
 
-            let r = l1.intersect(&l2);
+            let r = l1.intersect_line(&l2);
             assert!(r.is_some());
 
             let r = r.unwrap();
 
-            assert_eq!(l1.point_on_line(r), true);
-            assert_eq!(l2.point_on_line(r), true);
+            assert_eq!(l1.is_point_on_line(r), true);
+            assert_eq!(l2.is_point_on_line(r), true);
 
             assert_approx_eq!(r.x(), 3.0);
             assert_approx_eq!(r.y(), 1.0);
@@ -166,22 +280,22 @@ mod tests {
 
         // perpendicular to Y axis
         {
-            let l1 = Line {
+            let l1 = Segment {
                 a: P3::new(ZERO, 3.0, ZERO),
                 b: P3::new(ONE, 3.0, ONE),
             };
-            let l2 = Line {
+            let l2 = Segment {
                 a: P3::new(ZERO, 3.0, 3.0),
                 b: P3::new(1.5, 3.0, ZERO),
             };
 
-            let r = l1.intersect(&l2);
+            let r = l1.intersect_line(&l2);
             assert!(r.is_some());
 
             let r = r.unwrap();
 
-            assert_eq!(l1.point_on_line(r), true);
-            assert_eq!(l2.point_on_line(r), true);
+            assert_eq!(l1.is_point_on_line(r), true);
+            assert_eq!(l2.is_point_on_line(r), true);
             assert_approx_eq!(r.x(), 1.0);
             assert_approx_eq!(r.y(), 3.0);
             assert_approx_eq!(r.z(), 1.0);
@@ -189,22 +303,22 @@ mod tests {
 
         // perpendicular to Z axis
         {
-            let l1 = Line {
+            let l1 = Segment {
                 a: P3::origin(),
                 b: P3::new(1.0, 1.0, 0.0),
             };
-            let l2 = Line {
+            let l2 = Segment {
                 a: P3::new(0.0, -1.0, 0.0),
                 b: P3::new(1.0, 2.0, 0.0),
             };
 
-            let r = l1.intersect(&l2);
+            let r = l1.intersect_line(&l2);
             assert!(r.is_some());
 
             let r = r.unwrap();
 
-            assert_eq!(l1.point_on_line(r), true);
-            assert_eq!(l2.point_on_line(r), true);
+            assert_eq!(l1.is_point_on_line(r), true);
+            assert_eq!(l2.is_point_on_line(r), true);
             assert_approx_eq!(r.x(), 0.5);
             assert_approx_eq!(r.y(), 0.5);
             assert_approx_eq!(r.z(), 0.0);
@@ -213,22 +327,22 @@ mod tests {
         // general case, rotate perpendicular plan Z axis  for 45° around y axis
         {
             let rotation = Rotation::Y(helper::angle_2_rad(45.0));
-            let l1 = Line {
+            let l1 = Segment {
                 a: P3::origin(),
                 b: rotation * P3::new(1.0, 1.0, 0.0),
             };
-            let l2 = Line {
+            let l2 = Segment {
                 a: rotation * P3::new(0.0, -1.0, 0.0),
                 b: rotation * P3::new(1.0, 2.0, 0.0),
             };
 
-            let r = l1.intersect(&l2);
+            let r = l1.intersect_line(&l2);
             assert!(r.is_some());
 
             let r = r.unwrap();
 
-            assert_eq!(l1.point_on_line(r), true);
-            assert_eq!(l2.point_on_line(r), true);
+            assert_eq!(l1.is_point_on_line(r), true);
+            assert_eq!(l2.is_point_on_line(r), true);
 
             let intersect_point = P3::new(0.5, 0.5, ZERO);
             let rotated_intersect_point = rotation * intersect_point;
@@ -238,25 +352,25 @@ mod tests {
         }
         // not intersecting
         {
-            let l1 = Line {
+            let l1 = Segment {
                 a: P3::origin(),
                 b: Directions::up() * 5.0,
             };
-            let l2 = Line {
+            let l2 = Segment {
                 a: P3::new(1.0, 1.0, -3.0),
                 b: P3::new(1.0, 1.0, 3.0),
             };
-            let r = l1.intersect(&l2);
+            let r = l1.intersect_line(&l2);
             assert!(r.is_none());
         }
 
         // not intersecting closest point
         {
-            let l1 = Line {
+            let l1 = Segment {
                 a: P3::origin(),
                 b: Directions::up() * 5.0,
             };
-            let l2 = Line {
+            let l2 = Segment {
                 a: P3::new(1.0, 1.0, -3.0),
                 b: P3::new(1.0, 1.0, 3.0),
             };
