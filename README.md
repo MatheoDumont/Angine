@@ -60,14 +60,11 @@ cross(up, forward) = right
 
 - Calculer les points de contact en 2D pour OBB [ici](https://dyn4j.org/2011/11/contact-points-using-clipping/#cpg-alt)
 - Calculer points de contact et impl SAT nécessaire [ici](https://steamcdn-a.akamaihd.net/apps/valve/2015/DirkGregorius_Contacts.pdf)
-### Idées
-
-- Après une broadphase, calcul le temps exact de collision en se basant sur la vitesse linéaire et angulaire des objets.
+  
+### Améliorations
 
 - Aide pour SAT et calculer les points d'intersections sur les formes primitives [ici](https://steamcdn-a.akamaihd.net/apps/valve/2015/DirkGregorius_Contacts.pdf)
 - Clipping sur obb en 2D [ici](https://dyn4j.org/2011/11/contact-points-using-clipping/#cpg-alt)
-
-### Améliorations
 - amélioration pour SAT [ici](https://www.gdcvault.com/play/1017646/Physics-for-Game-Programmers-The)
 - [Quickhull](https://steamcdn-a.akamaihd.net/apps/valve/2014/DirkGregorius_ImplementingQuickHull.pdf)
 
