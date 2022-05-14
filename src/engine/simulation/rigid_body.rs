@@ -47,7 +47,7 @@ impl RigidBody {
             inv_mass: ONE / mass,
             transform,
             id: 0,
-            restitution_coef: 0.98,
+            restitution_coef: 0.95,
             is_static,
             center_of_mass: transform.translation,
             local_center_of_mass: P3::origin(),

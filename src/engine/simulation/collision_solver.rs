@@ -3,6 +3,10 @@ use super::RigidBody;
 use crate::engine::contact_algorithms::ContactInformation;
 use crate::math::math_essentials::*;
 
+/**
+ * Clear source =
+ * https://en.wikipedia.org/wiki/Collision_response
+ */
 pub fn resolve_collision(
     bodies: &mut Vec<RigidBody>,
     rb1_id: usize,
@@ -21,8 +25,9 @@ pub fn resolve_collision(
     );
     let v1 = rb1.linear_velocity + cross(&rb1.angular_velocity, &rb1_2_point);
     let v2 = rb2.linear_velocity + cross(&rb2.angular_velocity, &rb2_2_point);
-    let rel_velocity = v1 - v2;
+    let rel_velocity = v2 - v1;
     let rel_velocity_normal = dot(&rel_velocity, &normal);
+
     // si les deux objets s'eloignent l'un de l'autre alors pas d'impulsion
     if dot(&normal, &v1) < ZERO && dot(&normal, &v2) > ZERO {
         return;
@@ -45,26 +50,25 @@ pub fn resolve_collision(
         bodies[rb1_id].apply_displacement(-normal * contact_infos.penetration_distance);
         bodies[rb2_id].apply_displacement(normal * contact_infos.penetration_distance);
     } else {
-        let impulsion_vector_a = -normal * (ONE + rb1.restitution_coef) * t;
-        let impulsion_vector_b = normal * (ONE + rb2.restitution_coef) * t;
+        let imp_a = -(ONE + rb1.restitution_coef) * t;
+        let imp_b = -(ONE + rb2.restitution_coef) * t;
+        let impulsion_vector_a = -normal * imp_a;
+        let impulsion_vector_b = normal * imp_b;
 
         println!("1 linear_imp={:?} ", impulsion_vector_a);
         println!("2 linear_imp={:?} ", impulsion_vector_b);
 
+        // drop the ref to mut data
         drop(rb1);
         drop(rb2);
 
         bodies[rb1_id].apply_linear_impulse(impulsion_vector_a);
-        bodies[rb1_id].apply_angular_impulse(cross(
-            &rb1_2_point,
-            &(impulsion_vector_a * consts::ANGULAR_DAMPING),
-        ));
+        bodies[rb1_id]
+            .apply_angular_impulse(cross(&rb1_2_point, &normal) * -imp_a * consts::ANGULAR_DAMPING);
 
         bodies[rb2_id].apply_linear_impulse(impulsion_vector_b);
-        bodies[rb2_id].apply_angular_impulse(cross(
-            &rb2_2_point,
-            &(impulsion_vector_b * consts::ANGULAR_DAMPING),
-        ));
+        bodies[rb2_id]
+            .apply_angular_impulse(cross(&rb2_2_point, &normal) * -imp_b * consts::ANGULAR_DAMPING);
     }
 }
 
@@ -106,9 +110,12 @@ pub fn resolve_collision_point_one_moving(
         println!("linear_imp={:?} ", impulsion_vector);
 
         rb.apply_linear_impulse(impulsion_vector);
-        rb.apply_angular_impulse(cross(
-            &center2point,
-            &(impulsion_vector * consts::ANGULAR_DAMPING),
-        ));
+        // rb.apply_angular_impulse(cross(
+        //     &center2point,
+        //     &(impulsion_vector * consts::ANGULAR_DAMPING),
+        // ));
+        rb.apply_angular_impulse(
+            cross(&center2point, &normal) * impulsion * consts::ANGULAR_DAMPING,
+        );
     }
 }

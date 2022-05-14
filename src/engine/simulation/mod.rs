@@ -136,16 +136,39 @@ impl SimulationWorld {
         self.collision_world.step();
 
         // 2. On calcul et on applique les impulsions
-        let n_ite = 1;
+        let n_ite = 1; //5-8
         for _ in 0..n_ite {
             self.solve_contact_manifolds();
         }
-        self.collision_world.clear_manifold();
 
         // 3. integre les nouveaux états( vitesses lin ang, position, orientation) et update inertia tensor on rigidbodies
         for i in 0..self.bodies.len() {
             self.step_rigidbody(i);
         }
+
+        // linear displacement
+        // for cm in &self.collision_world.contact_manifolds {
+
+        //     let rb1_id = self
+        //         .collision_world
+        //         .collision_object_ref(cm.id_collision_object_a)
+        //         .unwrap()
+        //         .id_rigid_body
+        //         .unwrap();
+        //     let rb2_id = self
+        //         .collision_world
+        //         .collision_object_ref(cm.id_collision_object_b)
+        //         .unwrap()
+        //         .id_rigid_body
+        //         .unwrap();
+
+        //     let normal = cm.contact_infos.normal_a_to_b;
+        //     let penetration_distance = cm.contact_infos.penetration_distance;
+
+        //     self.bodies[rb1_id].apply_displacement(-normal * penetration_distance);
+        //     self.bodies[rb2_id].apply_displacement(normal * penetration_distance);
+        // }
+        self.collision_world.clear_manifold();
     }
 
     pub fn step_rigidbody(&mut self, id: usize) {
