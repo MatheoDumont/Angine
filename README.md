@@ -26,6 +26,7 @@ For each collision detected, a contact manifold is created. It contain the norma
 Then, each collision is resolved by computing an impulsion used to push objects apart from each other.  
 Finally, we compute the new state of each object in the simulation by integrating the velocities then the position and orientation.
 
+Here is the demo of the current result: https://user-images.githubusercontent.com/29271028/168427643-3a30f34d-a9e0-4ed4-afcb-4d4a628e0a48.mp4
 ## Documentation 
 A good take of intersection and some math comes from [*The game physic cookbook*](https://gamephysicscookbook.com/), but i didn't exactly followed it.
 
