@@ -56,6 +56,7 @@ cross(up, forward) = right
 
 
 ### Collisions
+- short article about impulsions based collision response on [wikidedia](https://en.wikipedia.org/wiki/Collision_response)
 - Méthode de a à z : [https://www.cs.cmu.edu/~baraff/sigcourse/](https://www.cs.cmu.edu/~baraff/sigcourse/)
 
 - Calculer les points de contact en 2D pour OBB [ici](https://dyn4j.org/2011/11/contact-points-using-clipping/#cpg-alt)
