@@ -56,28 +56,21 @@ cross(up, forward) = right
 
 
 ### Collisions
-Simplifiés de telle sorte que on intègre la position au temps t+1 comme étant  :
-```
-p_t+1 = p_t + v_t+1 * dt
-```
-
-Donc entre t et t+1, la vitesse est constante. On détecte la collision dans cette interval. Si la vitesse d'un objet est suffisante pour dépasser un autre dans un temps inférieur au dt = t+1 - t, alors la collision ne sera pas détectée. On peut clamp la vitesse pour empêcher cela.
-Cette technique est utilisée pour rester temps réel.
+- short article about impulsions based collision response on [wikidedia](https://en.wikipedia.org/wiki/Collision_response)
+- Méthode de a à z : [https://www.cs.cmu.edu/~baraff/sigcourse/](https://www.cs.cmu.edu/~baraff/sigcourse/)
 
 - Calculer les points de contact en 2D pour OBB [ici](https://dyn4j.org/2011/11/contact-points-using-clipping/#cpg-alt)
 - Calculer points de contact et impl SAT nécessaire [ici](https://steamcdn-a.akamaihd.net/apps/valve/2015/DirkGregorius_Contacts.pdf)
-### Idées
+  
+### Améliorations
 
-- Après une broadphase, calcul le temps exact de collision en se basant sur la vitesse linéaire et angulaire des objets.
-
+- a propos des contraintes, objets statiques, stack d'objets etc [ici](https://www.gdcvault.com/play/1020603/Physics-for-Game-Programmers-Understanding)
 - Aide pour SAT et calculer les points d'intersections sur les formes primitives [ici](https://steamcdn-a.akamaihd.net/apps/valve/2015/DirkGregorius_Contacts.pdf)
 - Clipping sur obb en 2D [ici](https://dyn4j.org/2011/11/contact-points-using-clipping/#cpg-alt)
-
-### Améliorations
 - amélioration pour SAT [ici](https://www.gdcvault.com/play/1017646/Physics-for-Game-Programmers-The)
 - [Quickhull](https://steamcdn-a.akamaihd.net/apps/valve/2014/DirkGregorius_ImplementingQuickHull.pdf)
 
 ### Aide
-
+- [global course on physic](https://physics.info/)
 - [Application](https://sumo.app/3d/?lang=en) web de visualisation 3D
 
