@@ -19,10 +19,6 @@ pub fn resolve_collision(
     let rb1_2_point = p - rb1.center_of_mass();
     let rb2_2_point = p - rb2.center_of_mass();
     let normal = &contact_infos.normal_a_to_b;
-    println!(
-        "normal{:?} distance{:?} p{:?}",
-        normal, contact_infos.penetration_distance, p
-    );
     let v1 = rb1.linear_velocity + cross(&rb1.angular_velocity, &rb1_2_point);
     let v2 = rb2.linear_velocity + cross(&rb2.angular_velocity, &rb2_2_point);
     let rel_velocity = v2 - v1;
@@ -45,31 +41,31 @@ pub fn resolve_collision(
         );
 
     let t = rel_velocity_normal / div;
+
     // set them appart if intersect but no displacement shared along the normal
-    if t == ZERO {
-        bodies[rb1_id].apply_displacement(-normal * contact_infos.penetration_distance);
-        bodies[rb2_id].apply_displacement(normal * contact_infos.penetration_distance);
-    } else {
-        let imp_a = -(ONE + rb1.restitution_coef) * t;
-        let imp_b = -(ONE + rb2.restitution_coef) * t;
-        let impulsion_vector_a = -normal * imp_a;
-        let impulsion_vector_b = normal * imp_b;
+    // if rel_velocity_normal == ZERO {
+    //     bodies[rb1_id].apply_displacement(-normal * contact_infos.penetration_distance);
+    //     bodies[rb2_id].apply_displacement(normal * contact_infos.penetration_distance);
 
-        println!("1 linear_imp={:?} ", impulsion_vector_a);
-        println!("2 linear_imp={:?} ", impulsion_vector_b);
+    let imp_a = -(ONE + rb1.restitution_coef) * t;
+    let imp_b = -(ONE + rb2.restitution_coef) * t;
+    let impulsion_vector_a = -normal * imp_a;
+    let impulsion_vector_b = normal * imp_b;
 
-        // drop the ref to mut data
-        drop(rb1);
-        drop(rb2);
+    println!("1 linear_imp={:?} ", impulsion_vector_a);
+    println!("2 linear_imp={:?} ", impulsion_vector_b);
 
-        bodies[rb1_id].apply_linear_impulse(impulsion_vector_a);
-        bodies[rb1_id]
-            .apply_angular_impulse(cross(&rb1_2_point, &normal) * -imp_a * consts::ANGULAR_DAMPING);
+    // drop the ref to mut data
+    drop(rb1);
+    drop(rb2);
 
-        bodies[rb2_id].apply_linear_impulse(impulsion_vector_b);
-        bodies[rb2_id]
-            .apply_angular_impulse(cross(&rb2_2_point, &normal) * -imp_b * consts::ANGULAR_DAMPING);
-    }
+    bodies[rb1_id].apply_linear_impulse(impulsion_vector_a);
+    bodies[rb1_id]
+        .apply_angular_impulse(cross(&rb1_2_point, &normal) * -imp_a * consts::ANGULAR_DAMPING);
+
+    bodies[rb2_id].apply_linear_impulse(impulsion_vector_b);
+    bodies[rb2_id]
+        .apply_angular_impulse(cross(&rb2_2_point, &normal) * -imp_b * consts::ANGULAR_DAMPING);
 }
 
 // rb is always the moving object
@@ -83,10 +79,16 @@ pub fn resolve_collision_point_one_moving(
     let center2point = p - rb.center_of_mass();
     let rel_velocity = rb.linear_velocity + cross(&rb.angular_velocity, &center2point);
     let rel_velocity_normal = dot(&rel_velocity, &normal);
+    println!("==resolve_collision_point_one_moving==");
 
-    if dot(&rel_velocity, &normal) > ZERO {
+    println!(
+        "normal {:?} rel_velocity_normal {:?} ",
+        normal, rel_velocity_normal
+    );
+    if rel_velocity_normal < ZERO {
         return;
     }
+
     let div = rb.inv_mass()
         + dot(
             &cross(
@@ -101,21 +103,18 @@ pub fn resolve_collision_point_one_moving(
         div, rel_velocity, rel_velocity_normal
     );
     let t = rel_velocity_normal / div;
-    if t == ZERO {
-        rb.apply_displacement(normal * penetration_distance);
-    } else {
-        let impulsion = -(ONE + rb.restitution_coef) * t;
-        let impulsion_vector = normal * impulsion;
+    // if rel_velocity_normal == ZERO {
+    //     rb.apply_displacement(normal * penetration_distance);
+    // } else {
+    let impulsion = -(ONE + rb.restitution_coef) * t;
+    let impulsion_vector = normal * impulsion;
 
-        println!("linear_imp={:?} ", impulsion_vector);
+    println!("linear_imp={:?} ", impulsion_vector);
 
-        rb.apply_linear_impulse(impulsion_vector);
-        // rb.apply_angular_impulse(cross(
-        //     &center2point,
-        //     &(impulsion_vector * consts::ANGULAR_DAMPING),
-        // ));
-        rb.apply_angular_impulse(
-            cross(&center2point, &normal) * impulsion * consts::ANGULAR_DAMPING,
-        );
-    }
+    rb.apply_linear_impulse(impulsion_vector);
+    // rb.apply_angular_impulse(cross(
+    //     &center2point,
+    //     &(impulsion_vector * consts::ANGULAR_DAMPING),
+    // ));
+    rb.apply_angular_impulse(cross(&center2point, &normal) * impulsion * consts::ANGULAR_DAMPING);
 }

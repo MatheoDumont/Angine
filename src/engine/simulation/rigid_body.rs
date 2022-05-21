@@ -27,9 +27,17 @@ impl RigidBody {
     pub fn new(transform: Transform, mass: Real, is_static: bool) -> RigidBody {
         let mut translation_moving_axis = Vec3::ones();
         let mut rotation_moving_axis = Vec3::ones();
+        let mut mass = mass;
+        let mut inv_mass = ZERO;
+
+        if mass != ZERO {
+            inv_mass = 1.0 / mass;
+        }
         if is_static {
             translation_moving_axis = Vec3::value(ZERO);
             rotation_moving_axis = Vec3::value(ZERO);
+            mass = ZERO;
+            inv_mass = ZERO;
         }
 
         RigidBody {
@@ -44,7 +52,7 @@ impl RigidBody {
             inv_inertia_matrix: Mat3::zero(),
             inv_inertia_tensor: Mat3::zero(),
             mass,
-            inv_mass: ONE / mass,
+            inv_mass,
             transform,
             id: 0,
             restitution_coef: 0.95,
@@ -75,6 +83,7 @@ impl RigidBody {
      * setter for mass and inv_mass
      */
     pub fn set_mass(&mut self, mass: Real, co: &CollisionObject) {
+        debug_assert!(mass != ZERO);
         self.mass = mass;
         self.inv_mass = 1.0 / self.mass;
         self.inertia_matrix = co.shape.compute_inertia_matrix(self.mass);
@@ -104,10 +113,13 @@ impl RigidBody {
         self.is_static = true;
         self.translation_moving_axis = Vec3::value(ZERO);
         self.rotation_moving_axis = Vec3::value(ZERO);
+        self.mass = ZERO;
+        self.inv_mass = ZERO;
     }
 
     pub fn integrate_velocities(&mut self, dt: Real) {
-        self.linear_velocity += self.total_force * self.inv_mass * dt;
+        let coef_air_resistance = 0.97;
+        self.linear_velocity += self.total_force * self.inv_mass * dt * coef_air_resistance;
         self.angular_velocity += self.inv_inertia_tensor * self.total_torque * dt;
         self.total_force = Vec3::zeros();
         self.total_torque = Vec3::zeros();

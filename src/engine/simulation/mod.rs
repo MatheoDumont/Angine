@@ -13,7 +13,6 @@ pub struct SimulationWorld {
     time_step: Real,
     pub collision_world: CollisionWorld,
 }
-use std::rc::Rc;
 impl SimulationWorld {
     /**
      * `time_step` is 1/60sec (consts::DELTA_TIME) if None
@@ -48,6 +47,14 @@ impl SimulationWorld {
         &mut self.bodies[id]
     }
 
+    pub fn pre_start_set_appart(&mut self) {
+        self.collision_world.step();
+
+        self.set_appart();
+
+        self.collision_world.contact_manifolds.clear();
+    }
+
     pub fn solve_contact_manifolds(&mut self) {
         println!("============================ solve_contact_manifolds =================================");
 
@@ -76,7 +83,10 @@ impl SimulationWorld {
             for p in &cm.contact_infos.points {
                 println!("       {:?}", p);
             }
-
+            println!(
+                "normal{:?} distance{:?}",
+                cm.contact_infos.normal_a_to_b, cm.contact_infos.penetration_distance
+            );
             match (self.bodies[rb1_id].is_static, self.bodies[rb2_id].is_static) {
                 (false, false) => {
                     println!("both mving");
@@ -147,28 +157,95 @@ impl SimulationWorld {
         }
 
         // linear displacement
-        // for cm in &self.collision_world.contact_manifolds {
-
-        //     let rb1_id = self
-        //         .collision_world
-        //         .collision_object_ref(cm.id_collision_object_a)
-        //         .unwrap()
-        //         .id_rigid_body
-        //         .unwrap();
-        //     let rb2_id = self
-        //         .collision_world
-        //         .collision_object_ref(cm.id_collision_object_b)
-        //         .unwrap()
-        //         .id_rigid_body
-        //         .unwrap();
-
-        //     let normal = cm.contact_infos.normal_a_to_b;
-        //     let penetration_distance = cm.contact_infos.penetration_distance;
-
-        //     self.bodies[rb1_id].apply_displacement(-normal * penetration_distance);
-        //     self.bodies[rb2_id].apply_displacement(normal * penetration_distance);
-        // }
+        self.displacement();
         self.collision_world.clear_manifold();
+    }
+
+    pub fn displacement(&mut self) {
+        println!("DISPLACEMENT");
+        for cm in &self.collision_world.contact_manifolds {
+            let rb1_id = self
+                .collision_world
+                .collision_object_ref(cm.id_collision_object_a)
+                .unwrap()
+                .id_rigid_body
+                .unwrap();
+            let rb2_id = self
+                .collision_world
+                .collision_object_ref(cm.id_collision_object_b)
+                .unwrap()
+                .id_rigid_body
+                .unwrap();
+
+            let normal = cm.contact_infos.normal_a_to_b;
+            let distance = cm.contact_infos.penetration_distance;
+            let total_force = self.bodies[rb1_id].mass() + self.bodies[rb2_id].mass();
+
+            let d = normal * (helper::max(distance.abs() - 0.01, ZERO) / total_force) * 0.0125;
+
+            match (self.bodies[rb1_id].is_static, self.bodies[rb2_id].is_static) {
+                (false, false) => {
+                    let i_m = self.bodies[rb1_id].inv_mass();
+                    self.bodies[rb1_id].apply_displacement(-d * i_m);
+                    println!("B1 [id={:?}] {:?} ", self.bodies[rb1_id].id, -d * i_m);
+
+                    let i_m = self.bodies[rb2_id].inv_mass();
+                    self.bodies[rb2_id].apply_displacement(d * i_m);
+                    println!("B2 [id={:?}] {:?} ", self.bodies[rb2_id].id, d * i_m);
+                }
+                (false, true) => {
+                    let i_m = self.bodies[rb1_id].inv_mass();
+                    self.bodies[rb1_id].apply_displacement(d * i_m);
+                    println!("B1 [id={:?}] {:?} ", self.bodies[rb1_id].id, -d * i_m);
+                }
+                (true, false) => {
+                    let i_m = self.bodies[rb2_id].inv_mass();
+                    self.bodies[rb2_id].apply_displacement(d * i_m);
+                    println!("B2 [id={:?}] {:?} ", self.bodies[rb2_id].id, d * i_m);
+                }
+                (true, true) => {
+                    // println!("None mving");
+                }
+            }
+        }
+    }
+
+    pub fn set_appart(&mut self) {
+        for cm in &self.collision_world.contact_manifolds {
+            let rb1_id = self
+                .collision_world
+                .collision_object_ref(cm.id_collision_object_a)
+                .unwrap()
+                .id_rigid_body
+                .unwrap();
+            let rb2_id = self
+                .collision_world
+                .collision_object_ref(cm.id_collision_object_b)
+                .unwrap()
+                .id_rigid_body
+                .unwrap();
+
+            let normal = cm.contact_infos.normal_a_to_b;
+            let distance = cm.contact_infos.penetration_distance;
+            let d = normal * distance;
+
+            match (self.bodies[rb1_id].is_static, self.bodies[rb2_id].is_static) {
+                (false, false) => {
+                    self.bodies[rb1_id].apply_displacement(-d);
+
+                    self.bodies[rb2_id].apply_displacement(d);
+                }
+                (false, true) => {
+                    self.bodies[rb1_id].apply_displacement(d);
+                }
+                (true, false) => {
+                    self.bodies[rb2_id].apply_displacement(d);
+                }
+                (true, true) => {
+                    // println!("None mving");
+                }
+            }
+        }
     }
 
     pub fn step_rigidbody(&mut self, id: usize) {

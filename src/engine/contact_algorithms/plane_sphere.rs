@@ -6,7 +6,7 @@ pub fn plane_sphere(plane: &Plane, sphere: &Sphere) -> ContactInformation {
     let d = plane.signed_distance(&sphere_pos);
     ContactInformation {
         points: vec![sphere_pos - &(plane.normal * d)],
-        normal_a_to_b: -plane.normal,
+        normal_a_to_b: plane.normal,
         penetration_distance: d,
     }
 }
