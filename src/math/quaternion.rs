@@ -1,5 +1,5 @@
 use super::{helper, Directions, Mat3, Real, Vec3, ONE, TWO, ZERO};
-use std::ops::{Add, Div, Mul};
+use std::ops::{Add, Div, Mul, MulAssign};
 
 /**
  * https://perso.liris.cnrs.fr/alexandre.meyer/teaching/master_charanim/aPDF_COURS_M2/M2_1b_Quaternions
@@ -183,10 +183,27 @@ impl Quaternion {
         let q = self * &Quaternion::from_vec(v) * self.conjugate();
         Quaternion::to_vec(&q)
     }
+
+    pub fn quaternion_derivative(&self, quat_from_vec: Quaternion) -> Quaternion {
+        self + &(&quat_from_vec * self * 0.5)
+    }
 }
 
 impl Add for Quaternion {
     type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Quaternion {
+            w: self.w + rhs.w,
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
+impl Add for &Quaternion {
+    type Output = Quaternion;
 
     fn add(self, rhs: Self) -> Self::Output {
         Quaternion {
@@ -222,6 +239,15 @@ impl Mul for &Quaternion {
             y: (self.w * rhs.y + self.y * rhs.w) + (self.z * rhs.x - rhs.z * self.x),
             z: (self.w * rhs.z + self.z * rhs.w) + (self.x * rhs.y - rhs.x * self.y),
         }
+    }
+}
+
+impl MulAssign<&Quaternion> for Quaternion {
+    fn mul_assign(&mut self, rhs: &Quaternion) {
+        self.w = self.w * rhs.w - (self.x * rhs.x + self.y * rhs.y + self.z * rhs.z);
+        self.x = (self.w * rhs.x + self.x * rhs.w) + (self.y * rhs.z - rhs.y * self.z);
+        self.y = (self.w * rhs.y + self.y * rhs.w) + (self.z * rhs.x - rhs.z * self.x);
+        self.z = (self.w * rhs.z + self.z * rhs.w) + (self.x * rhs.y - rhs.x * self.y);
     }
 }
 

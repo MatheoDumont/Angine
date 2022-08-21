@@ -1,4 +1,4 @@
-use super::ContactInformation;
+use super::ContactInformations;
 use crate::engine::shapes::{Plane, Segment, Shape, OBB};
 use crate::geometry::{
     geometry_traits::{FaceIndex, PolyhedronTrait},
@@ -6,14 +6,27 @@ use crate::geometry::{
 };
 use crate::math::{math_essentials::*, Quaternion};
 
-pub fn normal_with_points(obb_vertices: &Vec<Vec3>, face_indices: &FaceIndex) -> Vec3 {
-    // let face_indices = &obb.faces_ref()[face_index];
+pub fn obb_plane(obb: &OBB, plane: &Plane) -> ContactInformations {
+    let mut distance = ZERO;
+    let mut points = Vec::<P3>::new();
 
-    let p1 = &obb_vertices[face_indices.v_i[0]];
-    let p2 = &obb_vertices[face_indices.v_i[1]];
-    let p3 = &obb_vertices[face_indices.v_i[2]];
+    for v in &obb.transformed_vertices() {
+        let d = plane.signed_distance(&v);
+        // si en desous du plan
+        if d < ZERO {
+            // on remonte le point a mi chemin du plan
+            points.push(v - &(plane.normal * d * 0.5));
+            if d < distance {
+                distance = d;
+            }
+        }
+    }
 
-    geometry_helper::face_normal(&p1, &p2, &p3)
+    ContactInformations {
+        points,
+        normal_a_to_b: -plane.normal,
+        penetration_distance: distance.abs(),
+    }
 }
 
 pub fn collision_point(obb: &OBB, plane: &Plane) -> (P3, Real, Vec3) {
@@ -35,21 +48,8 @@ pub fn collision_point(obb: &OBB, plane: &Plane) -> (P3, Real, Vec3) {
 
     (projected_onto_plane, best_d, -plane.normal)
 }
-
-pub fn qsdobb_plane(obb: &OBB, plane: &Plane) -> ContactInformation {
-    let p = obb.project_on_contour_in_direction(&(-plane.normal));
-    let d = plane.signed_distance(&p);
-    let projected_onto_plane = p - plane.normal * d;
-
-    ContactInformation {
-        points: vec![projected_onto_plane],
-        normal_a_to_b: -plane.normal,
-        penetration_distance: d.abs(),
-    }
-}
-
 // from pybullet
-pub fn obb_plane(obb: &OBB, plane: &Plane) -> ContactInformation {
+pub fn azazeazeobb_plane(obb: &OBB, plane: &Plane) -> ContactInformations {
     let mut obb_cmp: OBB = obb.clone();
     let mut points = Vec::<Vec3>::new();
     let mut penetration_distance = ZERO;
@@ -72,7 +72,7 @@ pub fn obb_plane(obb: &OBB, plane: &Plane) -> ContactInformation {
         penetration_distance = helper::min(d, penetration_distance);
     }
 
-    ContactInformation {
+    ContactInformations {
         points,
         normal_a_to_b: -plane.normal,
         penetration_distance,

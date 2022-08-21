@@ -48,7 +48,7 @@ fn main() {
     let obb_co = CollisionObject::new(Box::new(shapes::OBB::new(half_length.clone())));
     let obb_rb = RigidBody::new(
         Transform::rotation(Rotation::X(helper::angle_2_rad(30.0))),
-        1.0,
+        5.0,
         false,
     );
     let obb_id = simulation_world.add_rigidbody(obb_rb, obb_co);

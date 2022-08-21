@@ -98,7 +98,7 @@ impl RigidBody {
     }
 
     pub fn link_and_set_collision_object(&mut self, co: &mut CollisionObject) {
-        co.id_rigid_body = Some(self.id);
+        co.rigidbody_id = Some(self.id);
         co.is_static = self.is_static;
         self.collision_object_id = Some(co.id);
         co.shape.set_transform(self.transform.clone());
@@ -134,17 +134,15 @@ impl RigidBody {
      * https://perso.liris.cnrs.fr/florence.zara/Web/media/files/M2-Animation/Chap4-RigidBody.pdf
      */
     pub fn integrate_state(&mut self, dt: Real) {
-        self.transform.translation += self.linear_velocity * dt;
-        self.center_of_mass = self.local_center_of_mass + self.transform.translation;
+        self.apply_displacement(self.linear_velocity * dt);
+        self.apply_rotation_vector(Quaternion::from_vec(&self.angular_velocity) * dt);
 
-        // Quaternion derivative
-        let q = Quaternion::from_mat3(&self.transform.rotation);
-        let new_q = q + Quaternion::from_vec(&self.angular_velocity) * q * 0.5 * dt;
-        self.transform.rotation = new_q.to_mat3();
+        // update center of mass
+        self.center_of_mass = self.local_center_of_mass + self.transform.translation;
 
         // update inverse inertia tensor
         self.inv_inertia_tensor =
-            self.transform.rotation * self.inv_inertia_matrix * self.transform.rotation.inverse();
+            self.transform.rotation * (self.inv_inertia_matrix * self.transform.rotation.inverse());
     }
 
     pub fn apply_central_force(&mut self, force: Vec3) {
@@ -154,10 +152,10 @@ impl RigidBody {
         self.total_torque += torque * self.rotation_moving_axis;
     }
 
-    pub fn apply_force(&mut self, force: Vec3) {
+    pub fn apply_force(&mut self, force: Vec3, point: P3) {
         self.apply_central_force(force);
         // apply_torque(cross(&relative_centroid, &force));
-        self.apply_torque(force * self.translation_moving_axis);
+        self.apply_torque(cross(&(point - self.center_of_mass), &force));
     }
 
     pub fn apply_gravity(&mut self) {
@@ -174,9 +172,21 @@ impl RigidBody {
     }
 
     /**
-     * Useful when in contact, without integrating speed
+     *  Useful to resolve linear contact penetration
      */
     pub fn apply_displacement(&mut self, translation: Vec3) {
         self.transform.translation += translation;
+    }
+
+    /**
+     * Use to compute the next orientation, based on a rotation_vector
+     * telling us how much to rotate in each direction(Quaternion derivative).
+     *
+     * Also Useful to resolve angular contact penetration
+     */
+    pub fn apply_rotation_vector(&mut self, quat_from_vec: Quaternion) {
+        // Quaternion derivative
+        let q = Quaternion::from_mat3(&self.transform.rotation);
+        self.transform.rotation = q.quaternion_derivative(quat_from_vec).to_mat3();
     }
 }

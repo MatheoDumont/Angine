@@ -78,6 +78,7 @@ impl CollisionWorld {
 
         let algo = get_intersection_fn_by_collisiontypes(shape_i, shape_j)?;
         let contact_infos = algo(shape_i, shape_j)?;
+
         let cm = ContactManifold {
             id_collision_object_a: id1_collision_object,
             id_collision_object_b: id2_collision_object,

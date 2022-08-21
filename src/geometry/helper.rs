@@ -71,6 +71,7 @@ pub fn face_normal(p1: &P3, p2: &P3, p3: &P3) -> Vec3 {
  */
 pub fn perp(v: &Vec3) -> (Vec3, Vec3) {
     let mut v1 = cross(&v, &Directions::up());
+    // v1 and y axis are parallele
     if v1 == Vec3::zeros() {
         v1 = cross(&v, &Directions::right());
     }

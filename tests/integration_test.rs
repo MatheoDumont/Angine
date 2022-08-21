@@ -27,7 +27,7 @@ fn init() {
     assert_eq!(obb_rb.center_of_mass(), &obb_rb.transform.translation);
     let obb_co = r.unwrap();
     assert_eq!(obb_co.id, 0);
-    assert_eq!(obb_co.id_rigid_body, Some(0));
+    assert_eq!(obb_co.rigidbody_id, Some(0));
     assert_eq!(obb_co.enabled, true);
     assert_eq!(obb_co.is_static, false);
     assert_eq!(obb_co.shape.shape_type() as usize, ShapeType::OBB as usize);
@@ -54,7 +54,7 @@ fn init() {
     assert!(r.is_ok());
     let plane_co = r.unwrap();
     assert_eq!(plane_co.id, 1);
-    assert_eq!(plane_co.id_rigid_body, Some(1));
+    assert_eq!(plane_co.rigidbody_id, Some(1));
     assert_eq!(plane_co.enabled, true);
     assert_eq!(plane_co.is_static, true);
     assert_eq!(

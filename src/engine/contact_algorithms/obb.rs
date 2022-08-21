@@ -1,10 +1,10 @@
-use super::ContactInformation;
+use super::ContactInformations;
 
 use crate::engine::shapes::{Segment, OBB};
 use crate::geometry::{self, geometry_traits::*, sat, sat::EdgeResult, sat::FaceResult};
 use crate::math::math_essentials::*;
 
-pub fn obb_obb(obb1: &OBB, obb2: &OBB) -> ContactInformation {
+pub fn obb_obb(obb1: &OBB, obb2: &OBB) -> ContactInformations {
     let sat_result = sat::sat_3D(obb1, obb2).unwrap();
 
     let normal: Vec3;
@@ -23,7 +23,7 @@ pub fn obb_obb(obb1: &OBB, obb2: &OBB) -> ContactInformation {
         distance = sat_result.edge.distance;
         points = edge_contact(&obb1, &obb2, &sat_result.edge);
     }
-    ContactInformation {
+    ContactInformations {
         points,
         normal_a_to_b: normal,
         penetration_distance: distance,

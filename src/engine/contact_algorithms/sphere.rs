@@ -1,9 +1,9 @@
-use super::ContactInformation;
+use super::ContactInformations;
 
 use crate::engine::shapes::Sphere;
 use crate::math::{vector::*, Real, Vec3, P3};
 
-pub fn sphere_sphere(s1: &Sphere, s2: &Sphere) -> ContactInformation {
+pub fn sphere_sphere(s1: &Sphere, s2: &Sphere) -> ContactInformations {
     let r = s1.radius + s2.radius;
     let mut n = s2.position - s1.position;
     let d = magnitude(&n);
@@ -12,7 +12,7 @@ pub fn sphere_sphere(s1: &Sphere, s2: &Sphere) -> ContactInformation {
     let penetration_distance = (d - r).abs() * 0.5;
     let dtp = s1.radius - penetration_distance;
     let p = s1.position + n * dtp;
-    ContactInformation {
+    ContactInformations {
         points: vec![p],
         normal_a_to_b: n,
         penetration_distance,

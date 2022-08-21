@@ -1,9 +1,9 @@
 use crate::engine::contact_algorithms;
-use crate::engine::contact_algorithms::ContactInformation;
+use crate::engine::contact_algorithms::ContactInformations;
 use crate::engine::shapes::{Plane, Shape, Sphere, OBB};
 use crate::math::Vec3;
 
-type FuncType = fn(&Box<dyn Shape>, &Box<dyn Shape>) -> Option<ContactInformation>;
+type FuncType = fn(&Box<dyn Shape>, &Box<dyn Shape>) -> Option<ContactInformations>;
 const N_SHAPES: usize = 3;
 const INTERSECTIONS_FUNCTIONS_BY_SHAPE_TYPE: [[Option<FuncType>; N_SHAPES]; N_SHAPES] = [
     //Sphere = 0
@@ -72,7 +72,7 @@ pub fn swap_normal_orientation(normal: &mut Vec3) {
 fn compute_sphere_sphere(
     shape1: &Box<dyn Shape>,
     shape2: &Box<dyn Shape>,
-) -> Option<ContactInformation> {
+) -> Option<ContactInformations> {
     let o1 = shape1
         .downcast_ref::<Sphere>()
         .expect("Tried to downcast to Sphere");
@@ -87,7 +87,7 @@ fn compute_sphere_sphere(
     }
 }
 
-fn compute_obb_obb(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Option<ContactInformation> {
+fn compute_obb_obb(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Option<ContactInformations> {
     let o1 = shape1
         .downcast_ref::<OBB>()
         .expect("Tried to downcast to OBB");
@@ -105,7 +105,7 @@ fn compute_obb_obb(shape1: &Box<dyn Shape>, shape2: &Box<dyn Shape>) -> Option<C
 fn compute_plane_plane(
     shape1: &Box<dyn Shape>,
     shape2: &Box<dyn Shape>,
-) -> Option<ContactInformation> {
+) -> Option<ContactInformations> {
     let o1 = shape1
         .downcast_ref::<Plane>()
         .expect("Tried to downcast to Plane");
@@ -123,7 +123,7 @@ fn compute_plane_plane(
 fn compute_sphere_obb(
     shape1: &Box<dyn Shape>,
     shape2: &Box<dyn Shape>,
-) -> Option<ContactInformation> {
+) -> Option<ContactInformations> {
     let o1 = shape1
         .downcast_ref::<Sphere>()
         .expect("Tried to downcast to Sphere");
@@ -143,7 +143,7 @@ fn compute_sphere_obb(
 fn compute_obb_sphere(
     shape1: &Box<dyn Shape>,
     shape2: &Box<dyn Shape>,
-) -> Option<ContactInformation> {
+) -> Option<ContactInformations> {
     let o1 = shape1
         .downcast_ref::<OBB>()
         .expect("Tried to downcast to OBB");
@@ -161,7 +161,7 @@ fn compute_obb_sphere(
 fn compute_obb_plane(
     shape1: &Box<dyn Shape>,
     shape2: &Box<dyn Shape>,
-) -> Option<ContactInformation> {
+) -> Option<ContactInformations> {
     let o1 = shape1
         .downcast_ref::<OBB>()
         .expect("Tried to downcast to OBB");
@@ -181,7 +181,7 @@ fn compute_obb_plane(
 fn compute_plane_obb(
     shape1: &Box<dyn Shape>,
     shape2: &Box<dyn Shape>,
-) -> Option<ContactInformation> {
+) -> Option<ContactInformations> {
     let o1 = shape1
         .downcast_ref::<Plane>()
         .expect("Tried to downcast to Plane");
@@ -202,7 +202,7 @@ fn compute_plane_obb(
 fn compute_plane_sphere(
     shape1: &Box<dyn Shape>,
     shape2: &Box<dyn Shape>,
-) -> Option<ContactInformation> {
+) -> Option<ContactInformations> {
     let o1 = shape1
         .downcast_ref::<Plane>()
         .expect("Tried to downcast to Plane");
@@ -220,7 +220,7 @@ fn compute_plane_sphere(
 fn compute_sphere_plane(
     shape1: &Box<dyn Shape>,
     shape2: &Box<dyn Shape>,
-) -> Option<ContactInformation> {
+) -> Option<ContactInformations> {
     let o1 = shape1
         .downcast_ref::<Sphere>()
         .expect("Tried to downcast to Sphere");

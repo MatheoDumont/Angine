@@ -12,17 +12,15 @@ pub use plane::plane_plane;
 pub use plane_sphere::plane_sphere;
 pub use sphere::sphere_sphere;
 
-use crate::engine::collision::CollisionObject;
 use crate::math::{Real, Vec3, P3};
 
-use std::rc::Weak;
 pub struct ContactManifold {
     pub id_collision_object_a: usize,
     pub id_collision_object_b: usize,
-    pub contact_infos: ContactInformation,
+    pub contact_infos: ContactInformations,
 }
 
-pub struct ContactInformation {
+pub struct ContactInformations {
     pub points: Vec<P3>,
     pub normal_a_to_b: Vec3,
     pub penetration_distance: Real,

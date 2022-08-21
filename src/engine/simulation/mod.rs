@@ -5,7 +5,7 @@ pub mod rigid_body;
 pub use rigid_body::RigidBody;
 
 use crate::engine::collision::{CollisionObject, CollisionWorld};
-use crate::engine::contact_algorithms::{ContactInformation, ContactManifold};
+use crate::engine::contact_algorithms::{ContactInformations, ContactManifold};
 use crate::math::math_essentials::*;
 
 pub struct SimulationWorld {
@@ -13,6 +13,7 @@ pub struct SimulationWorld {
     time_step: Real,
     pub collision_world: CollisionWorld,
 }
+    
 impl SimulationWorld {
     /**
      * `time_step` is 1/60sec (consts::DELTA_TIME) if None
@@ -67,13 +68,13 @@ impl SimulationWorld {
                 .collision_world
                 .collision_object_ref(cm.id_collision_object_a)
                 .unwrap()
-                .id_rigid_body
+                .rigidbody_id
                 .unwrap();
             let rb2_id = self
                 .collision_world
                 .collision_object_ref(cm.id_collision_object_b)
                 .unwrap()
-                .id_rigid_body
+                .rigidbody_id
                 .unwrap();
 
             println!(
@@ -92,7 +93,7 @@ impl SimulationWorld {
                     println!("both mving");
 
                     for p in &cm.contact_infos.points {
-                        collision_solver::resolve_collision(
+                        collision_solver::velocity_resolution_two_moving(
                             &mut self.bodies,
                             rb1_id,
                             rb2_id,
@@ -110,7 +111,7 @@ impl SimulationWorld {
                     );
 
                     for p in &cm.contact_infos.points {
-                        collision_solver::resolve_collision_point_one_moving(
+                        collision_solver::velocity_resolution_one_moving(
                             &mut self.bodies[rb1_id],
                             &p,
                             cm.contact_infos.normal_a_to_b,
@@ -126,7 +127,7 @@ impl SimulationWorld {
                         self.bodies[rb1_id].transform.translation,
                     );
                     for p in &cm.contact_infos.points {
-                        collision_solver::resolve_collision_point_one_moving(
+                        collision_solver::velocity_resolution_one_moving(
                             &mut self.bodies[rb2_id],
                             &p,
                             -cm.contact_infos.normal_a_to_b,
@@ -146,7 +147,7 @@ impl SimulationWorld {
         self.collision_world.step();
 
         // 2. On calcul et on applique les impulsions
-        let n_ite = 1; //5-8
+        let n_ite = 8; //5-8
         for _ in 0..n_ite {
             self.solve_contact_manifolds();
         }
@@ -156,58 +157,7 @@ impl SimulationWorld {
             self.step_rigidbody(i);
         }
 
-        // linear displacement
-        self.displacement();
         self.collision_world.clear_manifold();
-    }
-
-    pub fn displacement(&mut self) {
-        println!("DISPLACEMENT");
-        for cm in &self.collision_world.contact_manifolds {
-            let rb1_id = self
-                .collision_world
-                .collision_object_ref(cm.id_collision_object_a)
-                .unwrap()
-                .id_rigid_body
-                .unwrap();
-            let rb2_id = self
-                .collision_world
-                .collision_object_ref(cm.id_collision_object_b)
-                .unwrap()
-                .id_rigid_body
-                .unwrap();
-
-            let normal = cm.contact_infos.normal_a_to_b;
-            let distance = cm.contact_infos.penetration_distance;
-            let total_force = self.bodies[rb1_id].mass() + self.bodies[rb2_id].mass();
-
-            let d = normal * (helper::max(distance.abs() - 0.01, ZERO) / total_force) * 0.0125;
-
-            match (self.bodies[rb1_id].is_static, self.bodies[rb2_id].is_static) {
-                (false, false) => {
-                    let i_m = self.bodies[rb1_id].inv_mass();
-                    self.bodies[rb1_id].apply_displacement(-d * i_m);
-                    println!("B1 [id={:?}] {:?} ", self.bodies[rb1_id].id, -d * i_m);
-
-                    let i_m = self.bodies[rb2_id].inv_mass();
-                    self.bodies[rb2_id].apply_displacement(d * i_m);
-                    println!("B2 [id={:?}] {:?} ", self.bodies[rb2_id].id, d * i_m);
-                }
-                (false, true) => {
-                    let i_m = self.bodies[rb1_id].inv_mass();
-                    self.bodies[rb1_id].apply_displacement(d * i_m);
-                    println!("B1 [id={:?}] {:?} ", self.bodies[rb1_id].id, -d * i_m);
-                }
-                (true, false) => {
-                    let i_m = self.bodies[rb2_id].inv_mass();
-                    self.bodies[rb2_id].apply_displacement(d * i_m);
-                    println!("B2 [id={:?}] {:?} ", self.bodies[rb2_id].id, d * i_m);
-                }
-                (true, true) => {
-                    // println!("None mving");
-                }
-            }
-        }
     }
 
     pub fn set_appart(&mut self) {
@@ -216,13 +166,13 @@ impl SimulationWorld {
                 .collision_world
                 .collision_object_ref(cm.id_collision_object_a)
                 .unwrap()
-                .id_rigid_body
+                .rigidbody_id
                 .unwrap();
             let rb2_id = self
                 .collision_world
                 .collision_object_ref(cm.id_collision_object_b)
                 .unwrap()
-                .id_rigid_body
+                .rigidbody_id
                 .unwrap();
 
             let normal = cm.contact_infos.normal_a_to_b;
